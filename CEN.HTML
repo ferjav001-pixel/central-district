@@ -1,0 +1,2617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>CENTRAL DISTRICT | The World Is Yours</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+
+  <!-- 3D Engine + Real Geographic Projection Libraries (with offline/iOS fallback) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/dist/topojson-client.min.js"></script>
+
+  <style>
+    /* ==========================================================================
+       DESIGN TOKENS — Minimalist Monochrome Streetwear Aesthetic
+       ========================================================================== */
+    :root {
+      --bg-page: #ffffff;
+      --bg-surface: #f4f4f2;
+      --bg-surface-hover: #eaeae6;
+      --ink-primary: #111111;
+      --ink-secondary: #686865;
+      --ink-muted: #9a9a95;
+      --border-hairline: #e5e5e2;
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+      --font-display: 'Bebas Neue', Impact, 'Arial Narrow', sans-serif;
+      --ease-editorial: cubic-bezier(0.22, 1, 0.36, 1);
+      --header-height: 64px;
+      --announcement-height: 32px;
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      overflow-x: clip;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background-color: var(--bg-page);
+      color: var(--ink-primary);
+      font-size: 13px;
+      line-height: 1.5;
+      overflow-x: clip;
+    }
+
+    body.intro-active {
+      overflow: hidden;
+      height: 100vh;
+      height: 100dvh;
+      touch-action: none;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    button { font-family: inherit; background: none; border: none; color: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+    input, select { font-family: inherit; }
+
+    /* ==========================================================================
+       INTRO SCREEN — Responsive 3D Globe (Desktop & iPhone 17/18 Pro Max)
+       ========================================================================== */
+    .intro-overlay {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100vh;
+      height: 100dvh;
+      z-index: 200;
+      background: radial-gradient(circle at 50% 48%, #0b0b0f 0%, #020203 70%, #000000 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      opacity: 1;
+      transition: opacity 0.65s var(--ease-editorial);
+    }
+
+    .intro-overlay.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    #globeCanvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      opacity: 1;
+    }
+
+    .intro-brand-top {
+      position: absolute;
+      top: max(26px, calc(env(safe-area-inset-top) + 14px));
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 4;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.34em;
+      text-indent: 0.34em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.6);
+      pointer-events: none;
+      white-space: nowrap;
+      transition: opacity 0.4s ease;
+    }
+
+    .venezuela-tag {
+      position: absolute;
+      bottom: max(106px, calc(env(safe-area-inset-bottom) + 92px));
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 5;
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.24em;
+      text-indent: 0.24em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.92);
+      opacity: 0;
+      pointer-events: none;
+      white-space: nowrap;
+      transition: opacity 0.45s ease;
+    }
+
+    .venezuela-tag.visible {
+      opacity: 1;
+    }
+
+    .intro-bottom {
+      position: absolute;
+      bottom: max(36px, calc(env(safe-area-inset-bottom) + 26px));
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 5;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .welcome-btn {
+      padding: 14px 46px;
+      border: 1px solid rgba(255, 255, 255, 0.38);
+      background-color: rgba(10, 10, 12, 0.55);
+      -webkit-backdrop-filter: blur(8px);
+      backdrop-filter: blur(8px);
+      color: rgba(255, 255, 255, 0.95);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.28em;
+      text-indent: 0.28em;
+      text-transform: uppercase;
+      transition: all 0.35s var(--ease-editorial);
+    }
+
+    .welcome-btn:hover,
+    .welcome-btn:active {
+      background-color: #ffffff;
+      color: #090909;
+      border-color: #ffffff;
+    }
+
+    .welcome-btn.fade-out {
+      opacity: 0;
+      transform: translateY(6px);
+      pointer-events: none;
+    }
+
+    /* ==========================================================================
+       ANNOUNCEMENT BAR & HEADER
+       ========================================================================== */
+    .announcement-bar {
+      min-height: var(--announcement-height);
+      background-color: var(--ink-primary);
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      padding: max(6px, env(safe-area-inset-top)) 16px 6px;
+      text-align: center;
+    }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      height: var(--header-height);
+      background-color: rgba(255, 255, 255, 0.96);
+      -webkit-backdrop-filter: blur(10px);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border-hairline);
+    }
+
+    .header-inner {
+      max-width: 1560px;
+      height: 100%;
+      margin: 0 auto;
+      padding: 0 28px;
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .nav-left { display: flex; align-items: center; gap: 24px; }
+
+    .nav-link {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      position: relative;
+      padding: 6px 0;
+      white-space: nowrap;
+    }
+
+    .nav-link::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      bottom: 2px;
+      width: 100%;
+      height: 1px;
+      background-color: var(--ink-primary);
+      transform: scaleX(0);
+      transform-origin: right;
+      transition: transform 0.3s var(--ease-editorial);
+    }
+
+    .nav-link:hover::after { transform: scaleX(1); transform-origin: left; }
+
+    .nav-dropdown-wrap { position: relative; }
+
+    .nav-dropdown {
+      position: absolute;
+      top: 100%;
+      left: -16px;
+      min-width: 210px;
+      background: #ffffff;
+      border: 1px solid var(--border-hairline);
+      padding: 16px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(6px);
+      transition: all 0.25s var(--ease-editorial);
+      z-index: 50;
+    }
+
+    .nav-dropdown-wrap:hover .nav-dropdown { opacity: 1; visibility: visible; transform: translateY(0); }
+
+    .nav-dropdown button {
+      text-align: left;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--ink-secondary);
+      transition: color 0.2s ease;
+    }
+
+    .nav-dropdown button:hover { color: var(--ink-primary); }
+
+    .brand-logo {
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    .nav-right { display: flex; align-items: center; justify-content: flex-end; gap: 22px; }
+
+    .currency-select {
+      border: none;
+      background: transparent;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--ink-primary);
+      cursor: pointer;
+      outline: none;
+      padding-right: 4px;
+    }
+
+    .mobile-menu-btn {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    /* ==========================================================================
+       UPLOAD PLACEHOLDER SYSTEM
+       ========================================================================== */
+    .upload-slot {
+      position: relative;
+      background-color: var(--bg-surface);
+      overflow: hidden;
+      cursor: pointer;
+      transition: background-color 0.25s ease;
+      user-select: none;
+    }
+
+    .upload-slot:not(.has-image):hover { background-color: var(--bg-surface-hover); }
+    .upload-slot.drag-over { outline: 1.5px dashed var(--ink-primary); outline-offset: -8px; background-color: #e8e8e3; }
+
+    .slot-img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: none;
+      z-index: 1;
+    }
+
+    .upload-slot.has-image .slot-img { display: block; }
+    .slot-img-alt { z-index: 2; opacity: 0; transition: opacity 0.4s var(--ease-editorial); }
+    .product-media:hover .slot-img-alt.has-alt { opacity: 1; }
+
+    .upload-prompt {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 20px;
+      color: var(--ink-secondary);
+      pointer-events: none;
+    }
+
+    .upload-slot.has-image .upload-prompt { display: none; }
+
+    .upload-icon {
+      width: 24px;
+      height: 24px;
+      margin-bottom: 10px;
+      stroke: var(--ink-secondary);
+      stroke-width: 1.25;
+      fill: none;
+      transition: transform 0.25s var(--ease-editorial);
+    }
+
+    .upload-slot:hover .upload-icon { transform: scale(1.08); stroke: var(--ink-primary); }
+
+    .upload-label {
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--ink-primary);
+      margin-bottom: 4px;
+    }
+
+    .upload-hint { font-size: 11px; color: var(--ink-muted); }
+
+    .slot-controls {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 10;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 6px;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+
+    .upload-slot.has-image:hover .slot-controls { opacity: 1; }
+
+    /* Always show subtle edit controls on touch screens (iPhone/iPad) when an image is loaded */
+    @media (hover: none) {
+      .upload-slot.has-image .slot-controls { opacity: 0.92; }
+    }
+
+    .slot-ctrl-btn {
+      background: rgba(255, 255, 255, 0.92);
+      -webkit-backdrop-filter: blur(4px);
+      backdrop-filter: blur(4px);
+      color: var(--ink-primary);
+      border: 1px solid var(--border-hairline);
+      padding: 5px 9px;
+      font-size: 9px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      transition: background-color 0.2s ease, color 0.2s ease;
+    }
+
+    .slot-ctrl-btn:hover { background: var(--ink-primary); color: #ffffff; border-color: var(--ink-primary); }
+
+    body.preview-mode .upload-prompt,
+    body.preview-mode .slot-controls { display: none !important; }
+    body.preview-mode .upload-slot:not(.has-image) { cursor: default; }
+
+    /* ==========================================================================
+       HERO SECTION & STOREFRONT SECTIONS
+       ========================================================================== */
+    .hero-section {
+      position: relative;
+      width: 100%;
+      height: clamp(460px, 72svh, 840px);
+      border-bottom: 1px solid var(--border-hairline);
+    }
+
+    .hero-section .upload-prompt { padding-bottom: 120px; }
+
+    .hero-scrim {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      background: linear-gradient(to top, rgba(17, 17, 17, 0.62) 0%, rgba(17, 17, 17, 0.16) 45%, rgba(17, 17, 17, 0) 100%);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.35s ease;
+    }
+
+    .hero-section.has-image .hero-scrim { opacity: 1; }
+
+    .hero-content {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 4;
+      max-width: 1560px;
+      margin: 0 auto;
+      padding: 44px 28px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      color: var(--ink-primary);
+      pointer-events: none;
+      transition: color 0.3s ease;
+    }
+
+    .hero-section.has-image .hero-content { color: #ffffff; }
+
+    .hero-eyebrow {
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+      opacity: 0.78;
+    }
+
+    .hero-title {
+      font-size: clamp(26px, 4.2vw, 52px);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.06;
+      text-transform: uppercase;
+      margin-bottom: 24px;
+      max-width: 680px;
+    }
+
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; pointer-events: auto; }
+
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 13px 28px;
+      background-color: var(--ink-primary);
+      color: #ffffff;
+      border: 1px solid var(--ink-primary);
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      transition: all 0.25s var(--ease-editorial);
+    }
+
+    .btn-primary:hover { background-color: transparent; color: var(--ink-primary); }
+
+    .hero-section.has-image .btn-primary { background-color: #ffffff; color: var(--ink-primary); border-color: #ffffff; }
+    .hero-section.has-image .btn-primary:hover { background-color: transparent; color: #ffffff; }
+
+    .btn-outline {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 13px 28px;
+      background-color: transparent;
+      color: var(--ink-primary);
+      border: 1px solid var(--ink-primary);
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      transition: all 0.25s var(--ease-editorial);
+    }
+
+    .btn-outline:hover { background-color: var(--ink-primary); color: #ffffff; }
+    .hero-section.has-image .btn-outline { color: #ffffff; border-color: rgba(255, 255, 255, 0.7); }
+    .hero-section.has-image .btn-outline:hover { background-color: #ffffff; color: var(--ink-primary); border-color: #ffffff; }
+
+    .container { max-width: 1560px; margin: 0 auto; padding: 0 28px; }
+    .section-block { padding: 64px 0; }
+
+    .section-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 32px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border-hairline);
+    }
+
+    .section-title { font-size: 13px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; }
+    .filter-tabs { display: flex; flex-wrap: wrap; gap: 18px; align-items: center; }
+
+    .filter-btn {
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--ink-muted);
+      padding-bottom: 4px;
+      border-bottom: 1px solid transparent;
+      transition: color 0.2s ease, border-color 0.2s ease;
+    }
+
+    .filter-btn:hover, .filter-btn.active { color: var(--ink-primary); border-bottom-color: var(--ink-primary); }
+
+    .product-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 28px 18px; }
+    .product-card { display: flex; flex-direction: column; }
+    .product-media { aspect-ratio: 4 / 5; margin-bottom: 14px; }
+
+    .product-badge {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 4;
+      background-color: #ffffff;
+      color: var(--ink-primary);
+      border: 1px solid var(--border-hairline);
+      padding: 4px 8px;
+      font-size: 9px;
+      font-weight: 500;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      pointer-events: none;
+    }
+
+    .quick-size-bar {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 5;
+      background-color: rgba(255, 255, 255, 0.94);
+      -webkit-backdrop-filter: blur(6px);
+      backdrop-filter: blur(6px);
+      border-top: 1px solid var(--border-hairline);
+      padding: 8px 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      transform: translateY(100%);
+      transition: transform 0.28s var(--ease-editorial);
+    }
+
+    .product-media:hover .quick-size-bar { transform: translateY(0); }
+
+    .quick-size-btn {
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      padding: 5px 8px;
+      color: var(--ink-primary);
+      transition: background-color 0.15s ease, color 0.15s ease;
+    }
+
+    .quick-size-btn:hover { background-color: var(--ink-primary); color: #ffffff; }
+
+    .product-info { display: flex; flex-direction: column; gap: 4px; }
+    .product-title-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+    .product-title { font-size: 12px; font-weight: 400; letter-spacing: 0.02em; color: var(--ink-primary); text-align: left; }
+    .product-title:hover { opacity: 0.65; }
+    .product-price { font-size: 12px; color: var(--ink-secondary); white-space: nowrap; }
+    .product-meta { font-size: 11px; color: var(--ink-muted); }
+
+    .editorial-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+    .editorial-card { aspect-ratio: 4 / 5; position: relative; }
+
+    .editorial-scrim {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      background: linear-gradient(to top, rgba(17, 17, 17, 0.56) 0%, rgba(17, 17, 17, 0) 55%);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .editorial-card.has-image .editorial-scrim { opacity: 1; }
+
+    .editorial-overlay {
+      position: absolute;
+      left: 24px;
+      right: 24px;
+      bottom: 24px;
+      z-index: 4;
+      pointer-events: none;
+      color: var(--ink-primary);
+      transition: color 0.3s ease;
+    }
+
+    .editorial-card.has-image .editorial-overlay { color: #ffffff; }
+    .editorial-title { font-size: 16px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 6px; }
+    .editorial-link { pointer-events: auto; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; border-bottom: 1px solid currentColor; padding-bottom: 2px; display: inline-block; }
+
+    .brand-split { display: grid; grid-template-columns: 1fr 1fr; border-top: 1px solid var(--border-hairline); border-bottom: 1px solid var(--border-hairline); }
+    .brand-media { aspect-ratio: 4 / 5; min-height: 440px; max-height: 760px; width: 100%; }
+    .brand-copy { display: flex; flex-direction: column; justify-content: center; padding: 64px clamp(24px, 6vw, 96px); background-color: var(--bg-page); }
+    .brand-eyebrow { font-size: 10px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-muted); margin-bottom: 14px; }
+    .brand-heading { font-size: clamp(22px, 2.6vw, 34px); font-weight: 400; letter-spacing: -0.015em; line-height: 1.18; text-transform: uppercase; margin-bottom: 20px; max-width: 440px; }
+    .brand-text { font-size: 13px; line-height: 1.75; color: var(--ink-secondary); max-width: 460px; margin-bottom: 32px; }
+
+    .lookbook-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+    .lookbook-card { aspect-ratio: 3 / 4; }
+    .lookbook-caption {
+      position: absolute;
+      left: 12px;
+      bottom: 12px;
+      z-index: 4;
+      font-size: 9px;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      background: rgba(255, 255, 255, 0.9);
+      color: var(--ink-primary);
+      padding: 4px 8px;
+      pointer-events: none;
+    }
+
+    /* FOOTER */
+    .site-footer { border-top: 1px solid var(--border-hairline); padding: 64px 0 max(36px, calc(env(safe-area-inset-bottom) + 56px)); background-color: var(--bg-page); }
+    .footer-grid { display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; gap: 48px; margin-bottom: 56px; }
+    .footer-heading { font-size: 10px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 18px; }
+    .newsletter-desc { font-size: 12px; color: var(--ink-secondary); margin-bottom: 16px; max-width: 340px; }
+    .newsletter-form { display: flex; max-width: 380px; border: 1px solid var(--ink-primary); }
+    .newsletter-input { flex: 1; border: none; padding: 11px 14px; font-size: 13px; outline: none; background: transparent; border-radius: 0; }
+    .newsletter-submit { background-color: var(--ink-primary); color: #ffffff; padding: 0 20px; font-size: 10px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; }
+    .newsletter-feedback { font-size: 11px; color: var(--ink-secondary); margin-top: 8px; min-height: 16px; }
+    .footer-links { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+    .footer-links a { font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-secondary); }
+    .footer-links a:hover { color: var(--ink-primary); }
+    .footer-bottom { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; padding-top: 28px; border-top: 1px solid var(--border-hairline); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-muted); }
+    .social-row { display: flex; gap: 20px; }
+    .social-row a:hover { color: var(--ink-primary); }
+
+    /* OVERLAYS & DRAWERS */
+    .backdrop { position: fixed; inset: 0; background: rgba(17, 17, 17, 0.35); -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px); z-index: 60; opacity: 0; visibility: hidden; transition: all 0.3s ease; }
+    .backdrop.open { opacity: 1; visibility: visible; }
+    .cart-drawer { position: fixed; top: 0; right: 0; width: 100%; max-width: 420px; height: 100dvh; background: #ffffff; z-index: 70; display: flex; flex-direction: column; transform: translateX(100%); transition: transform 0.35s var(--ease-editorial); border-left: 1px solid var(--border-hairline); padding-bottom: env(safe-area-inset-bottom); }
+    .cart-drawer.open { transform: translateX(0); }
+    .drawer-header { padding: max(20px, calc(env(safe-area-inset-top) + 12px)) 24px 20px; border-bottom: 1px solid var(--border-hairline); display: flex; align-items: center; justify-content: space-between; }
+    .drawer-title { font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; }
+    .close-btn { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-secondary); padding: 4px; }
+    .close-btn:hover { color: var(--ink-primary); }
+    .shipping-tracker { padding: 14px 24px; background-color: var(--bg-surface); border-bottom: 1px solid var(--border-hairline); }
+    .shipping-text { font-size: 11px; color: var(--ink-primary); margin-bottom: 8px; text-align: center; }
+    .shipping-bar-bg { height: 2px; background: #dcdcd8; width: 100%; overflow: hidden; }
+    .shipping-bar-fill { height: 100%; background: var(--ink-primary); width: 0%; transition: width 0.4s var(--ease-editorial); }
+    .cart-items { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 20px 24px; display: flex; flex-direction: column; gap: 18px; }
+    .cart-empty { margin: auto; text-align: center; color: var(--ink-secondary); }
+    .cart-empty p { font-size: 12px; margin-bottom: 18px; }
+    .cart-item { display: grid; grid-template-columns: 72px 1fr; gap: 14px; padding-bottom: 18px; border-bottom: 1px solid var(--border-hairline); }
+    .cart-item-thumb { aspect-ratio: 4 / 5; background-color: var(--bg-surface); overflow: hidden; display: flex; align-items: center; justify-content: center; font-size: 9px; color: var(--ink-muted); letter-spacing: 0.08em; text-transform: uppercase; }
+    .cart-item-thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .cart-item-details { display: flex; flex-direction: column; justify-content: space-between; }
+    .cart-item-top { display: flex; justify-content: space-between; gap: 8px; }
+    .cart-item-name { font-size: 12px; font-weight: 500; }
+    .cart-item-size { font-size: 10px; color: var(--ink-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 2px; }
+    .cart-item-bottom { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; }
+    .qty-stepper { display: inline-flex; align-items: center; border: 1px solid var(--border-hairline); }
+    .qty-stepper button { padding: 4px 10px; font-size: 12px; }
+    .qty-stepper span { padding: 0 8px; font-size: 11px; }
+    .cart-upsell { padding: 14px 24px; border-top: 1px solid var(--border-hairline); background-color: #fafaf9; }
+    .upsell-heading { font-size: 10px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 10px; color: var(--ink-secondary); }
+    .upsell-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 0; }
+    .upsell-info { font-size: 11px; }
+    .upsell-price { color: var(--ink-muted); font-size: 11px; }
+    .upsell-add { border: 1px solid var(--ink-primary); padding: 5px 12px; font-size: 9px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; transition: all 0.2s ease; }
+    .upsell-add:hover { background: var(--ink-primary); color: #ffffff; }
+    .cart-footer { padding: 20px 24px; border-top: 1px solid var(--border-hairline); background: #ffffff; }
+    .subtotal-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; font-size: 12px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; }
+    .checkout-btn { width: 100%; }
+
+    .search-overlay { position: fixed; top: 0; left: 0; right: 0; background: #ffffff; z-index: 75; border-bottom: 1px solid var(--border-hairline); padding: max(28px, calc(env(safe-area-inset-top) + 16px)) 24px 28px; transform: translateY(-100%); transition: transform 0.3s var(--ease-editorial); }
+    .search-overlay.open { transform: translateY(0); }
+    .search-inner { max-width: 960px; margin: 0 auto; }
+    .search-bar { display: flex; align-items: center; border-bottom: 1px solid var(--ink-primary); padding-bottom: 10px; gap: 12px; }
+    .search-input { flex: 1; border: none; outline: none; font-size: 16px; background: transparent; border-radius: 0; }
+    .search-results { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-top: 24px; max-height: 50vh; overflow-y: auto; }
+    .search-result-item { text-align: left; padding: 10px; border: 1px solid var(--border-hairline); }
+    .search-result-item:hover { border-color: var(--ink-primary); }
+
+    .mobile-drawer { position: fixed; top: 0; left: 0; width: 100%; max-width: 340px; height: 100dvh; background: #ffffff; z-index: 75; padding: max(24px, calc(env(safe-area-inset-top) + 14px)) 24px 24px; display: flex; flex-direction: column; gap: 24px; transform: translateX(-100%); transition: transform 0.35s var(--ease-editorial); overflow-y: auto; }
+    .mobile-drawer.open { transform: translateX(0); }
+    .mobile-nav-list { display: flex; flex-direction: column; gap: 16px; }
+    .mobile-nav-list a, .mobile-nav-list button { text-align: left; font-size: 13px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; padding-bottom: 10px; border-bottom: 1px solid var(--border-hairline); }
+
+    .quick-view-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -48%) scale(0.98); width: calc(100% - 32px); max-width: 820px; background: #ffffff; z-index: 80; border: 1px solid var(--border-hairline); display: grid; grid-template-columns: 1fr 1fr; opacity: 0; visibility: hidden; transition: all 0.28s var(--ease-editorial); }
+    .quick-view-modal.open { opacity: 1; visibility: visible; transform: translate(-50%, -50%) scale(1); }
+    .qv-media { aspect-ratio: 4 / 5; background: var(--bg-surface); display: flex; align-items: center; justify-content: center; color: var(--ink-muted); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; overflow: hidden; }
+    .qv-media img { width: 100%; height: 100%; object-fit: cover; }
+    .qv-body { padding: 32px; display: flex; flex-direction: column; justify-content: space-between; position: relative; }
+    .qv-close { position: absolute; top: 20px; right: 20px; }
+    .qv-sizes { display: flex; flex-wrap: wrap; gap: 8px; margin: 20px 0 28px; }
+    .qv-size-btn { min-width: 44px; padding: 9px 12px; border: 1px solid var(--border-hairline); font-size: 11px; letter-spacing: 0.08em; transition: all 0.2s ease; }
+    .qv-size-btn.selected, .qv-size-btn:hover { border-color: var(--ink-primary); background: var(--ink-primary); color: #ffffff; }
+
+    .studio-pill {
+      position: fixed;
+      right: 20px;
+      bottom: max(18px, calc(env(safe-area-inset-bottom) + 12px));
+      z-index: 55;
+      background: rgba(17, 17, 17, 0.92);
+      -webkit-backdrop-filter: blur(8px);
+      backdrop-filter: blur(8px);
+      color: #ffffff;
+      padding: 9px 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 10px;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+    }
+    .studio-pill-btn { color: #ffffff; border-bottom: 1px solid rgba(255, 255, 255, 0.45); padding-bottom: 1px; font-size: 10px; letter-spacing: 0.09em; text-transform: uppercase; }
+    .studio-pill-btn:hover { border-bottom-color: #ffffff; }
+    .studio-pill-close { color: rgba(255, 255, 255, 0.6); font-size: 14px; line-height: 1; padding: 0 2px; }
+
+    .toast { position: fixed; left: 50%; bottom: max(24px, calc(env(safe-area-inset-bottom) + 18px)); transform: translate(-50%, 16px); background: var(--ink-primary); color: #ffffff; padding: 10px 20px; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; z-index: 90; opacity: 0; pointer-events: none; transition: all 0.25s var(--ease-editorial); }
+    .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+    @media (max-width: 1080px) {
+      .product-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .footer-grid { grid-template-columns: 1fr 1fr; }
+    }
+
+    @media (max-width: 820px) {
+      .nav-left { display: none; }
+      .mobile-menu-btn { display: inline-flex; }
+      .nav-right .currency-wrap { display: none; }
+      .nav-right { gap: 14px; }
+      .brand-logo { font-size: 13px; letter-spacing: 0.18em; }
+      .product-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 12px; }
+      .editorial-grid, .brand-split { grid-template-columns: 1fr; }
+      .brand-media { min-height: 360px; }
+      .lookbook-grid, .search-results { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .quick-view-modal { grid-template-columns: 1fr; max-height: 88dvh; overflow-y: auto; }
+      .studio-pill { left: 12px; right: 12px; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+      .newsletter-input, .search-input, .currency-select { font-size: 16px; }
+    }
+
+    @media (max-width: 520px) {
+      .header-inner, .container, .hero-content { padding-left: 16px; padding-right: 16px; }
+      .section-block { padding: 48px 0; }
+      .footer-grid { grid-template-columns: 1fr; gap: 32px; }
+      .quick-size-bar { display: none; }
+      .qv-body { padding: 22px; }
+    }
+  </style>
+</head>
+<body class="intro-active">
+
+  <!-- ========================================================================
+       1. INTRO SCREEN (Direct transition to Store after Venezuela zoom)
+       ======================================================================== -->
+  <section class="intro-overlay" id="introOverlay" aria-label="Central District Intro">
+    <div class="intro-brand-top" id="introBrandTop">CENTRAL DISTRICT</div>
+
+    <canvas id="globeCanvas"></canvas>
+
+    <div class="venezuela-tag" id="venezuelaTag">10.48° N · 66.90° W — VENEZUELA</div>
+
+    <div class="intro-bottom">
+      <!-- Puedes cambiar "WELCOME" a "WELCOM" aquí si prefieres esa grafía exacta -->
+      <button class="welcome-btn" id="welcomeBtn" onclick="startIntroExitSequence()">WELCOME</button>
+    </div>
+  </section>
+
+  <input type="file" id="globalFileInput" accept="image/*" hidden />
+
+  <div class="announcement-bar" id="announcementText">
+    COMPLIMENTARY WORLDWIDE SHIPPING ON ORDERS OVER $150.00
+  </div>
+
+  <header class="site-header">
+    <div class="header-inner">
+      <div>
+        <button class="mobile-menu-btn" onclick="openMobileMenu()" aria-label="Open menu">
+          <span>MENU</span>
+        </button>
+
+        <nav class="nav-left" aria-label="Main navigation">
+          <a href="#shop" class="nav-link" onclick="filterProducts('all')">New Arrivals</a>
+
+          <div class="nav-dropdown-wrap">
+            <a href="#shop" class="nav-link">Shop</a>
+            <div class="nav-dropdown">
+              <button onclick="filterAndScroll('all')">All Products</button>
+              <button onclick="filterAndScroll('hoodies')">Fleece &amp; Hoodies</button>
+              <button onclick="filterAndScroll('t-shirts')">Essential Tees</button>
+              <button onclick="filterAndScroll('outerwear')">Outerwear</button>
+              <button onclick="filterAndScroll('accessories')">Accessories</button>
+            </div>
+          </div>
+
+          <a href="#lookbook" class="nav-link">Lookbook</a>
+          <a href="#brand" class="nav-link">The Brand</a>
+        </nav>
+      </div>
+
+      <a href="#" class="brand-logo">CENTRAL DISTRICT</a>
+
+      <div class="nav-right">
+        <div class="currency-wrap">
+          <select class="currency-select" id="currencySelectTop" aria-label="Currency selector" onchange="setCurrency(this.value)">
+            <option value="USD">USD $</option>
+            <option value="GBP">GBP £</option>
+            <option value="EUR">EUR €</option>
+          </select>
+        </div>
+        <button class="nav-link" onclick="openSearch()">Search</button>
+        <button class="nav-link" onclick="openCart()">Bag (<span id="bagCount">0</span>)</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- HERO SECTION -->
+    <section class="hero-section upload-slot" data-slot="hero">
+      <img class="slot-img" src="" alt="Central District Season 01 Campaign" />
+      <div class="upload-prompt">
+        <svg class="upload-icon" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18"/><path d="M12 8v8M8 12h8"/></svg>
+        <div class="upload-label">Hero Campaign Space — 16:9</div>
+        <div class="upload-hint">Tap or drag &amp; drop an image to preview</div>
+      </div>
+      <div class="slot-controls">
+        <button class="slot-ctrl-btn" onclick="triggerSlotUpload(event, 'hero')">Replace</button>
+        <button class="slot-ctrl-btn" onclick="clearSlotImage(event, 'hero')">Remove</button>
+      </div>
+      <div class="hero-scrim"></div>
+      <div class="hero-content">
+        <span class="hero-eyebrow">Season 01 — Archive Release</span>
+        <h1 class="hero-title">Form, Weight &amp; Quiet Utility.</h1>
+        <div class="hero-actions">
+          <a href="#shop" class="btn-primary" onclick="event.stopPropagation()">Shop Collection</a>
+          <a href="#lookbook" class="btn-outline" onclick="event.stopPropagation()">View Lookbook</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- FEATURED PRODUCT GRID -->
+    <section id="shop" class="section-block container">
+      <div class="section-header">
+        <h2 class="section-title">New Arrivals</h2>
+        <div class="filter-tabs" role="tablist" aria-label="Product categories">
+          <button class="filter-btn active" data-filter="all" onclick="filterProducts('all')">All</button>
+          <button class="filter-btn" data-filter="hoodies" onclick="filterProducts('hoodies')">Fleece &amp; Hoodies</button>
+          <button class="filter-btn" data-filter="t-shirts" onclick="filterProducts('t-shirts')">Tees</button>
+          <button class="filter-btn" data-filter="outerwear" onclick="filterProducts('outerwear')">Outerwear</button>
+          <button class="filter-btn" data-filter="accessories" onclick="filterProducts('accessories')">Accessories</button>
+        </div>
+      </div>
+      <div class="product-grid" id="productGrid"></div>
+    </section>
+
+    <!-- EDITORIAL COLLECTION SPLIT -->
+    <section class="section-block container" style="padding-top: 12px;">
+      <div class="editorial-grid">
+        <div class="editorial-card upload-slot" data-slot="cat-outerwear">
+          <img class="slot-img" src="" alt="Central District Outerwear" />
+          <div class="upload-prompt">
+            <svg class="upload-icon" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18"/><path d="M12 8v8M8 12h8"/></svg>
+            <div class="upload-label">Collection 01 — 4:5</div>
+            <div class="upload-hint">Tap or drop image</div>
+          </div>
+          <div class="slot-controls">
+            <button class="slot-ctrl-btn" onclick="triggerSlotUpload(event, 'cat-outerwear')">Replace</button>
+            <button class="slot-ctrl-btn" onclick="clearSlotImage(event, 'cat-outerwear')">Remove</button>
+          </div>
+          <div class="editorial-scrim"></div>
+          <div class="editorial-overlay">
+            <div class="editorial-title">Outerwear</div>
+            <a href="#shop" class="editorial-link" onclick="event.stopPropagation(); filterAndScroll('outerwear')">Explore</a>
+          </div>
+        </div>
+
+        <div class="editorial-card upload-slot" data-slot="cat-fleece">
+          <img class="slot-img" src="" alt="Central District Heavyweight Fleece" />
+          <div class="upload-prompt">
+            <svg class="upload-icon" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18"/><path d="M12 8v8M8 12h8"/></svg>
+            <div class="upload-label">Collection 02 — 4:5</div>
+            <div class="upload-hint">Tap or drop image</div>
+          </div>
+          <div class="slot-controls">
+            <button class="slot-ctrl-btn" onclick="triggerSlotUpload(event, 'cat-fleece')">Replace</button>
+            <button class="slot-ctrl-btn" onclick="clearSlotImage(event, 'cat-fleece')">Remove</button>
+          </div>
+          <div class="editorial-scrim"></div>
+          <div class="editorial-overlay">
+            <div class="editorial-title">Heavyweight Fleece</div>
+            <a href="#shop" class="editorial-link" onclick="event.stopPropagation(); filterAndScroll('hoodies')">Explore</a>
+          </div>
+        </div>
+
+        <div class="editorial-card upload-slot" data-slot="cat-tees">
+          <img class="slot-img" src="" alt="Central District Essential Tees" />
+          <div class="upload-prompt">
+            <svg class="upload-icon" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18"/><path d="M12 8v8M8 12h8"/></svg>
+            <div class="upload-label">Collection 03 — 4:5</div>
+            <div class="upload-hint">Tap or drop image</div>
+          </div>
+          <div class="slot-controls">
+            <button class="slot-ctrl-btn" onclick="triggerSlotUpload(event, 'cat-tees')">Replace</button>
+            <button class="slot-ctrl-btn" onclick="clearSlotImage(event, 'cat-tees')">Remove</button>
+          </div>
+          <div class="editorial-scrim"></div>
+          <div class="editorial-overlay">
+            <div class="editorial-title">Essential Tees</div>
+            <a href="#shop" class="editorial-link" onclick="event.stopPropagation(); filterAndScroll('t-shirts')">Explore</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- THE BRAND SPLIT SECTION -->
+    <section id="brand" class="brand-split">
+      <div class="brand-media upload-slot" data-slot="brand-story">
+        <img class="slot-img" src="" alt="Central District Brand Atelier" />
+        <div class="upload-prompt">
+          <svg class="upload-icon" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18"/><path d="M12 8v8M8 12h8"/></svg>
+          <div class="upload-label">Brand Editorial — 4:5</div>
+          <div class="upload-hint">Tap or drag &amp; drop portrait image</div>
+        </div>
+        <div class="slot-controls">
+          <button class="slot-ctrl-btn" onclick="triggerSlotUpload(event, 'brand-story')">Replace</button>
+          <button class="slot-ctrl-btn" onclick="clearSlotImage(event, 'brand-story')">Remove</button>
+        </div>
+      </div>
+
+      <div class="brand-copy">
+        <span class="brand-eyebrow">The Brand</span>
+        <h2 class="brand-heading">Rooted in the Central District.</h2>
+        <p class="brand-text">
+          Designed around timeless proportion and restrained detail. Central District pairs
+          heavyweight 480gsm milled jersey, clean architectural tailoring, and considered
+          monochrome tones—crafted in small seasonal releases built to endure beyond the drop.
+        </p>
+        <div>
+          <a href="#shop" class="btn-outline">Explore the Archive</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- LOOKBOOK STRIP -->
+    <section id="lookbook" class="section-block container">
+      <div class="section-header">
+        <h2 class="section-title">Lookbook — Autumn / Winter</h2>
+        <span style="font-size: 11px; color: var(--ink-muted); letter-spacing: 0.08em; text-transform: uppercase;">Edition 01</span>
+      </div>
+
+      <div class="lookbook-grid">
+        <div class="lookbook-card upload-slot" data-slot="look-1">
+          <img class="slot-img" src="" alt="Central District Look 01" />
+          <div class="upload-prompt">
+            <svg class="upload-icon" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18"/><path d="M12 8v8M8 12h8"/></svg>
+            <div class="upload-label">Look 01 — 3:4</div>
+            <div class="upload-hint">Upload photo</div>
+          </div>
+          <div class="slot-controls">
+            <button class="slot-ctrl-btn" onclick="triggerSlotUpload(event, 'look-1')">Replace</button>
+            <button class="slot-ctrl-btn" onclick="clearSlotImage(event, 'look-1')">Remove</button>
+          </div>
+          <span class="lookbook-caption">Look 01</span>
+        </div>
+
+        <div class="lookbook-card upload-slot" data-slot="look-2">
+          <img class="slot-img" src="" alt="Central District Look 02" />
+          <div class="upload-prompt">
+            <svg class="upload-icon" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18"/><path d="M12 8v8M8 12h8"/></svg>
+            <div class="upload-label">Look 02 — 3:4</div>
+            <div class="upload-hint">Upload photo</div>
+          </div>
+          <div class="slot-controls">
+            <button class="slot-ctrl-btn" onclick="triggerSlotUpload(event, 'look-2')">Replace</button>
+            <button class="slot-ctrl-btn" onclick="clearSlotImage(event, 'look-2')">Remove</button>
+          </div>
+          <span class="lookbook-caption">Look 02</span>
+        </div>
+
+        <div class="lookbook-card upload-slot" data-slot="look-3">
+          <img class="slot-img" src="" alt="Central District Look 03" />
+          <div class="upload-prompt">
+            <svg class="upload-icon" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18"/><path d="M12 8v8M8 12h8"/></svg>
+            <div class="upload-label">Look 03 — 3:4</div>
+            <div class="upload-hint">Upload photo</div>
+          </div>
+          <div class="slot-controls">
+            <button class="slot-ctrl-btn" onclick="triggerSlotUpload(event, 'look-3')">Replace</button>
+            <button class="slot-ctrl-btn" onclick="clearSlotImage(event, 'look-3')">Remove</button>
+          </div>
+          <span class="lookbook-caption">Look 03</span>
+        </div>
+
+        <div class="lookbook-card upload-slot" data-slot="look-4">
+          <img class="slot-img" src="" alt="Central District Look 04" />
+          <div class="upload-prompt">
+            <svg class="upload-icon" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18"/><path d="M12 8v8M8 12h8"/></svg>
+            <div class="upload-label">Look 04 — 3:4</div>
+            <div class="upload-hint">Upload photo</div>
+          </div>
+          <div class="slot-controls">
+            <button class="slot-ctrl-btn" onclick="triggerSlotUpload(event, 'look-4')">Replace</button>
+            <button class="slot-ctrl-btn" onclick="clearSlotImage(event, 'look-4')">Remove</button>
+          </div>
+          <span class="lookbook-caption">Look 04</span>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div>
+          <h3 class="footer-heading">Newsletter</h3>
+          <p class="newsletter-desc">Sign up to our mailing list for early access to limited seasonal drops and restocks.</p>
+          <form class="newsletter-form" onsubmit="handleNewsletter(event)">
+            <input type="email" class="newsletter-input" id="newsletterEmail" placeholder="Email address" required />
+            <button type="submit" class="newsletter-submit">Subscribe</button>
+          </form>
+          <div class="newsletter-feedback" id="newsletterFeedback"></div>
+        </div>
+
+        <div>
+          <h3 class="footer-heading">Shop</h3>
+          <ul class="footer-links">
+            <li><a href="#shop" onclick="filterProducts('all')">All Products</a></li>
+            <li><a href="#shop" onclick="filterProducts('hoodies')">Fleece &amp; Hoodies</a></li>
+            <li><a href="#shop" onclick="filterProducts('t-shirts')">Essential Tees</a></li>
+            <li><a href="#shop" onclick="filterProducts('outerwear')">Outerwear</a></li>
+            <li><a href="#shop" onclick="filterProducts('accessories')">Accessories</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h3 class="footer-heading">Client Care</h3>
+          <ul class="footer-links">
+            <li><a href="#brand">About Us</a></li>
+            <li><a href="#" onclick="event.preventDefault(); showToast('Shipping & Returns policy modal placeholder')">Shipping Policy</a></li>
+            <li><a href="#" onclick="event.preventDefault(); showToast('Returns policy modal placeholder')">Returns Policy</a></li>
+            <li><a href="#" onclick="event.preventDefault(); showToast('FAQs modal placeholder')">FAQs</a></li>
+            <li><a href="#" onclick="event.preventDefault(); showToast('Contact: support@centraldistrict.store')">Contact Us</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h3 class="footer-heading">Legal</h3>
+          <ul class="footer-links">
+            <li><a href="#" onclick="event.preventDefault()">Terms of Service</a></li>
+            <li><a href="#" onclick="event.preventDefault()">Privacy Policy</a></li>
+            <li><a href="#" onclick="event.preventDefault(); replayIntro()">Replay Intro</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <div>&copy; 2026 CENTRAL DISTRICT. ALL RIGHTS RESERVED.</div>
+        <div class="social-row">
+          <a href="#" onclick="event.preventDefault()">Instagram</a>
+          <a href="#" onclick="event.preventDefault()">TikTok</a>
+          <a href="#" onclick="event.preventDefault()">YouTube</a>
+          <a href="#" onclick="event.preventDefault()">X</a>
+        </div>
+        <div>
+          <select class="currency-select" id="currencySelectBottom" aria-label="Footer currency selector" onchange="setCurrency(this.value)">
+            <option value="USD">United States (USD $)</option>
+            <option value="GBP">United Kingdom (GBP £)</option>
+            <option value="EUR">Europe (EUR €)</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <div class="backdrop" id="backdrop" onclick="closeAllOverlays()"></div>
+
+  <aside class="cart-drawer" id="cartDrawer" aria-label="Shopping Bag">
+    <div class="drawer-header">
+      <span class="drawer-title">Your Bag (<span id="drawerBagCount">0</span>)</span>
+      <button class="close-btn" onclick="closeAllOverlays()">Close</button>
+    </div>
+    <div class="shipping-tracker">
+      <div class="shipping-text" id="shippingText">Spend $150.00 more for complimentary shipping</div>
+      <div class="shipping-bar-bg"><div class="shipping-bar-fill" id="shippingBarFill"></div></div>
+    </div>
+    <div class="cart-items" id="cartItemsContainer"></div>
+    <div class="cart-upsell">
+      <div class="upsell-heading">Complete Your Order</div>
+      <div class="upsell-row">
+        <div>
+          <div class="upsell-info">District Ribbed Crew Socks — White</div>
+          <div class="upsell-price" data-usd="24">$24.00</div>
+        </div>
+        <button class="upsell-add" onclick="addUpsellToCart('upsell-socks', 'District Ribbed Crew Socks — White', 24)">+ Add</button>
+      </div>
+      <div class="upsell-row">
+        <div>
+          <div class="upsell-info">District Embroidered Cap — Navy</div>
+          <div class="upsell-price" data-usd="55">$55.00</div>
+        </div>
+        <button class="upsell-add" onclick="addUpsellToCart(8, 'District Embroidered Cap — Navy', 55)">+ Add</button>
+      </div>
+    </div>
+    <div class="cart-footer" id="cartFooter" style="display: none;">
+      <div class="subtotal-row">
+        <span>Subtotal</span>
+        <span id="cartSubtotal">$0.00</span>
+      </div>
+      <button class="btn-primary checkout-btn" onclick="showToast('Checkout connected to your store backend')">Secure Checkout</button>
+    </div>
+  </aside>
+
+  <div class="search-overlay" id="searchOverlay">
+    <div class="search-inner">
+      <div class="search-bar">
+        <input type="text" class="search-input" id="searchInput" placeholder="Search Central District..." oninput="handleSearch(this.value)" />
+        <button class="close-btn" onclick="closeAllOverlays()">Close</button>
+      </div>
+      <div class="search-results" id="searchResults"></div>
+    </div>
+  </div>
+
+  <aside class="mobile-drawer" id="mobileDrawer">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+      <span class="brand-logo" style="font-size: 13px;">CENTRAL DISTRICT</span>
+      <button class="close-btn" onclick="closeAllOverlays()">Close</button>
+    </div>
+    <div class="mobile-nav-list">
+      <button onclick="filterAndScroll('all'); closeAllOverlays()">New Arrivals</button>
+      <button onclick="filterAndScroll('hoodies'); closeAllOverlays()">Fleece &amp; Hoodies</button>
+      <button onclick="filterAndScroll('t-shirts'); closeAllOverlays()">Essential Tees</button>
+      <button onclick="filterAndScroll('outerwear'); closeAllOverlays()">Outerwear</button>
+      <button onclick="filterAndScroll('accessories'); closeAllOverlays()">Accessories</button>
+      <a href="#lookbook" onclick="closeAllOverlays()">Lookbook</a>
+      <a href="#brand" onclick="closeAllOverlays()">The Brand</a>
+    </div>
+  </aside>
+
+  <div class="quick-view-modal" id="quickViewModal">
+    <div class="qv-media" id="qvMedia">No Image Uploaded</div>
+    <div class="qv-body">
+      <button class="close-btn qv-close" onclick="closeAllOverlays()">Close</button>
+      <div>
+        <div class="brand-eyebrow" id="qvCategory" style="margin-bottom: 6px;">Collection</div>
+        <h3 style="font-size: 18px; font-weight: 400; margin-bottom: 6px;" id="qvTitle">Product</h3>
+        <div style="font-size: 14px; color: var(--ink-secondary); margin-bottom: 18px;" id="qvPrice">$0.00</div>
+        <p style="font-size: 12px; color: var(--ink-secondary); line-height: 1.65;" id="qvDesc"></p>
+        <div style="margin-top: 20px; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-muted);">Select Size</div>
+        <div class="qv-sizes" id="qvSizes"></div>
+      </div>
+      <button class="btn-primary" style="width: 100%;" id="qvAddBtn">Add to Bag</button>
+    </div>
+  </div>
+
+  <div class="studio-pill" id="studioPill">
+    <span id="uploadCounter">0 / 16 Slots</span>
+    <button class="studio-pill-btn" id="previewToggleBtn" onclick="togglePreviewMode()">Preview</button>
+    <button class="studio-pill-btn" onclick="resetAllImages()">Reset</button>
+    <button class="studio-pill-btn" onclick="replayIntro()">Replay Intro</button>
+    <button class="studio-pill-close" onclick="document.getElementById('studioPill').style.display='none'" aria-label="Dismiss helper">&times;</button>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    /* ========================================================================
+       PART 1: HIGH-DETAIL 3D GLOBE (iOS Safari Safe + Responsive Camera + Direct Store Entry)
+       ======================================================================== */
+    const VENEZUELA_LAT = 8.0;
+    const VENEZUELA_LON = -66.2;
+    const GLOBE_FOV = 35;
+
+    const FALLBACK_CONTINENTS = [
+      [[-168,65],[-165,68],[-156,71],[-140,70],[-128,70],[-120,74],[-105,75],[-95,74],[-82,71],[-78,66],[-65,62],[-56,52],[-60,46],[-67,45],[-70,42],[-75,36],[-81,31],[-80,25],[-82,26],[-84,30],[-90,29],[-97,26],[-96,19],[-91,18],[-90,21],[-87,21],[-88,16],[-84,15],[-83,10],[-78,8],[-80,7],[-85,10],[-92,14],[-105,19],[-110,24],[-115,31],[-121,35],[-124,41],[-124,48],[-131,54],[-138,59],[-150,60],[-160,56],[-166,60]],
+      [[-85,22],[-81,23],[-75,20],[-78,20],[-84,21]],
+      [[-52,60],[-42,60],[-34,67],[-20,72],[-18,78],[-24,83],[-48,83],[-68,77],[-60,71],[-54,65]],
+      [[-78,9],[-75,11],[-72,12],[-68,10.6],[-63,10.7],[-59,8],[-52,4],[-49,0],[-41,-3],[-35,-6],[-38,-13],[-40,-21],[-47,-25],[-52,-32],[-57,-37],[-63,-41],[-67,-48],[-68,-54],[-73,-53],[-75,-46],[-72,-36],[-71,-22],[-77,-12],[-81,-5],[-79,2]],
+      [[-9,37],[-9,43],[-2,43],[-4,48],[2,51],[8,54],[9,57],[5,61],[12,66],[22,70],[30,71],[42,68],[58,69],[70,72],[85,74],[105,77],[125,73],[145,71],[170,68],[179,65],[170,60],[162,55],[156,60],[142,54],[140,48],[133,42],[129,35],[126,37],[123,39],[120,36],[122,31],[120,25],[114,22],[108,20],[109,13],[104,10],[103,2],[100,7],[98,15],[92,20],[88,22],[82,16],[78,8],[73,17],[68,24],[61,25],[56,26],[48,30],[50,27],[59,22],[53,16],[44,13],[36,28],[34,31],[36,36],[29,37],[26,40],[23,38],[21,40],[18,40],[15,38],[12,42],[9,44],[4,43],[0,39],[-5,36]],
+      [[-6,50],[1,51],[1,54],[-2,58],[-6,58],[-5,53]],
+      [[130,32],[135,34],[140,36],[142,41],[145,44],[141,45],[138,39],[133,35]],
+      [[-6,36],[9,37],[12,33],[22,32],[32,31],[35,25],[41,15],[51,12],[48,4],[41,-3],[40,-14],[35,-24],[29,-32],[19,-35],[15,-26],[12,-16],[12,-6],[9,4],[2,6],[-8,5],[-16,12],[-17,16],[-15,24],[-10,31]],
+      [[49,-12],[50,-17],[47,-25],[44,-24],[44,-17]],
+      [[95,5],[104,-1],[106,-6],[114,-8],[105,-7],[98,2]],
+      [[109,1],[117,6],[118,0],[114,-3],[110,-2]],
+      [[114,-22],[122,-17],[130,-12],[136,-12],[137,-15],[142,-11],[146,-18],[153,-27],[150,-37],[141,-38],[134,-34],[124,-34],[115,-34],[113,-27]],
+      [[173,-35],[178,-38],[174,-41],[167,-46],[170,-43],[173,-38]],
+      [[-180,-72],[0,-70],[180,-72],[180,-90],[-180,-90]]
+    ];
+    const FALLBACK_VENEZUELA = [
+      [-73.3,10.9],[-71.5,11.8],[-71.2,10.2],[-69.8,12.1],[-66.0,10.6],[-61.9,10.1],
+      [-60.0,8.5],[-61.0,4.6],[-64.8,1.8],[-67.8,2.5],[-69.5,6.2],[-72.5,9.1]
+    ];
+
+    function getResponsiveCamZ(aspect) {
+      const tanHalf = Math.tan((GLOBE_FOV * Math.PI) / 360);
+      const safeAspect = Math.max(0.36, aspect || 1);
+      // Ensures full "THE WORLD IS YOURS" ring (radius ~1.28 + margin = 1.50) fits comfortably on portrait iPhones
+      const distWidth = 1.50 / (tanHalf * safeAspect);
+      const distHeight = (safeAspect < 0.9 ? 1.62 : 1.48) / tanHalf;
+      return Math.max(4.45, distHeight, distWidth);
+    }
+
+    let introState = {
+      phase: "idle", // idle | textZoom | spinVenezuela | pauseVenezuela | globeZoom | done
+      phaseTime: 0,
+      startRotY: 0,
+      targetRotY: 0,
+      startRotX: 0,
+      targetRotX: 0,
+      startCamZ: 4.5,
+      targetCamZ: 3.5,
+      mouseX: 0,
+      mouseY: 0,
+      useThree: false,
+      animId: null
+    };
+
+    let scene, camera, renderer, parallaxGroup, globeTiltGroup, globeMesh, ringGroup;
+    let ringLayers = [];
+    let glowLayer = null;
+    let neonLightL, neonLightR, rimLight;
+    let venezuelaBeaconMat, venezuelaRingMesh, atmosOuterMat, atmosInnerMat;
+
+    const isMobileViewport = () => window.innerWidth <= 900 || /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+    function loadCORSImage(url, timeoutMs = 4000) {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        const timer = setTimeout(() => resolve(null), timeoutMs);
+        img.onload = () => { clearTimeout(timer); resolve(img); };
+        img.onerror = () => { clearTimeout(timer); resolve(null); };
+        img.src = url;
+      });
+    }
+
+    async function fetchWorldAtlas() {
+      const urls = [
+        "https://cdn.jsdelivr.net/npm/world-atlas@2.0.2/countries-50m.json",
+        "https://cdn.jsdelivr.net/npm/world-atlas@2.0.2/countries-110m.json"
+      ];
+      for (const url of urls) {
+        try {
+          const controller = new AbortController();
+          const timer = setTimeout(() => controller.abort(), 4500);
+          const res = await fetch(url, { signal: controller.signal });
+          clearTimeout(timer);
+          if (res.ok) return await res.json();
+        } catch (_) {}
+      }
+      return null;
+    }
+
+    function createNoisePatternCanvas() {
+      const c = document.createElement("canvas");
+      c.width = 256;
+      c.height = 256;
+      const ctx = c.getContext("2d");
+      ctx.fillStyle = "#808080";
+      ctx.fillRect(0, 0, 256, 256);
+      for (let i = 0; i < 650; i++) {
+        const x = Math.random() * 256;
+        const y = Math.random() * 256;
+        const r = 0.8 + Math.random() * 8;
+        const v = Math.floor(70 + Math.random() * 165);
+        ctx.fillStyle = `rgba(${v},${v},${v},0.14)`;
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      return c;
+    }
+
+    // Safari-safe grayscale & contrast helper (avoids ctx.filter bugs on iOS WebKit)
+    function drawMonochromeTopography(ctx, img, W, H, invertColors) {
+      const temp = document.createElement("canvas");
+      const tw = Math.min(1024, W);
+      const th = Math.min(512, H);
+      temp.width = tw;
+      temp.height = th;
+      const ttx = temp.getContext("2d");
+      ttx.drawImage(img, 0, 0, tw, th);
+
+      try {
+        const imgData = ttx.getImageData(0, 0, tw, th);
+        const d = imgData.data;
+        for (let i = 0; i < d.length; i += 4) {
+          let lum = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+          if (invertColors) lum = 255 - lum;
+          // Crisp monochrome contrast curve
+          lum = Math.max(0, Math.min(255, (lum - 128) * 1.32 + 132));
+          d[i] = d[i + 1] = d[i + 2] = lum;
+        }
+        ttx.putImageData(imgData, 0, 0);
+        ctx.drawImage(temp, 0, 0, W, H);
+      } catch (_) {
+        ctx.drawImage(img, 0, 0, W, H);
+      }
+    }
+
+    function buildGlobeTextures(worldTopo, topoImg, waterImg) {
+      // Smart texture size: 2048x1024 on iPhones/mobile (prevents iOS WebGL RAM crashes), 4096x2048 on desktop
+      const mobile = isMobileViewport();
+      const W = mobile ? 2048 : 4096;
+      const H = mobile ? 1024 : 2048;
+      const RW = mobile ? 1024 : 2048;
+      const RH = mobile ? 512 : 1024;
+      const noiseTile = createNoisePatternCanvas();
+
+      const colorCanvas = document.createElement("canvas");
+      colorCanvas.width = W;
+      colorCanvas.height = H;
+      const ctx = colorCanvas.getContext("2d");
+
+      ctx.fillStyle = "#040406";
+      ctx.fillRect(0, 0, W, H);
+
+      if (waterImg) {
+        ctx.save();
+        ctx.globalAlpha = 0.08;
+        drawMonochromeTopography(ctx, waterImg, W, H, true);
+        ctx.restore();
+      }
+
+      const hasD3 = Boolean(worldTopo && typeof d3 !== "undefined" && typeof topojson !== "undefined");
+
+      if (hasD3) {
+        const projection = d3.geoEquirectangular()
+          .scale(W / (2 * Math.PI))
+          .translate([W / 2, H / 2])
+          .precision(0.15);
+        const geoPath = d3.geoPath(projection, ctx);
+
+        const landGeo = topojson.feature(worldTopo, worldTopo.objects.land);
+        const countriesGeo = topojson.feature(worldTopo, worldTopo.objects.countries);
+        const bordersMesh = topojson.mesh(worldTopo, worldTopo.objects.countries, (a, b) => a !== b);
+        const graticule = d3.geoGraticule10();
+
+        ctx.save();
+        ctx.beginPath();
+        geoPath(graticule);
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.035)";
+        ctx.lineWidth = mobile ? 0.8 : 1.0;
+        ctx.stroke();
+        ctx.restore();
+
+        ctx.save();
+        ctx.beginPath();
+        geoPath(landGeo);
+        ctx.fillStyle = "#2b2b30";
+        ctx.fill();
+        ctx.clip();
+
+        if (topoImg) {
+          ctx.globalAlpha = 0.72;
+          drawMonochromeTopography(ctx, topoImg, W, H, false);
+        }
+
+        ctx.globalCompositeOperation = "overlay";
+        ctx.globalAlpha = 0.28;
+        ctx.fillStyle = ctx.createPattern(noiseTile, "repeat");
+        ctx.fillRect(0, 0, W, H);
+        ctx.restore();
+
+        ctx.save();
+        countriesGeo.features.forEach((feat) => {
+          const idNum = parseInt(feat.id, 10) || 0;
+          const isVenezuela = String(feat.id) === "862";
+          ctx.beginPath();
+          geoPath(feat);
+          if (isVenezuela) {
+            ctx.fillStyle = "rgba(235, 235, 245, 0.30)";
+          } else {
+            const shade = 200 + ((idNum * 37) % 45);
+            ctx.fillStyle = `rgba(${shade}, ${shade}, ${shade + 6}, ${(idNum % 3) * 0.025})`;
+          }
+          ctx.fill();
+        });
+        ctx.restore();
+
+        ctx.save();
+        ctx.beginPath();
+        geoPath(bordersMesh);
+        ctx.strokeStyle = "rgba(180, 180, 192, 0.35)";
+        ctx.lineWidth = mobile ? 0.85 : 1.1;
+        ctx.stroke();
+        ctx.restore();
+
+        ctx.save();
+        ctx.beginPath();
+        geoPath(landGeo);
+        ctx.strokeStyle = "rgba(225, 225, 235, 0.56)";
+        ctx.lineWidth = mobile ? 1.15 : 1.5;
+        ctx.stroke();
+        ctx.restore();
+
+        const venFeat = countriesGeo.features.find((f) => String(f.id) === "862");
+        if (venFeat) {
+          ctx.save();
+          ctx.beginPath();
+          geoPath(venFeat);
+          ctx.strokeStyle = "rgba(255, 255, 255, 0.95)";
+          ctx.lineWidth = mobile ? 2.0 : 2.6;
+          ctx.stroke();
+          ctx.restore();
+        }
+      } else {
+        const lonToX = (lon) => ((lon + 180) / 360) * W;
+        const latToY = (lat) => ((90 - lat) / 180) * H;
+        const trace = (pts) => {
+          ctx.beginPath();
+          pts.forEach(([lon, lat], idx) => {
+            if (idx === 0) ctx.moveTo(lonToX(lon), latToY(lat));
+            else ctx.lineTo(lonToX(lon), latToY(lat));
+          });
+          ctx.closePath();
+        };
+        FALLBACK_CONTINENTS.forEach((pts) => {
+          trace(pts);
+          ctx.fillStyle = "#36363c";
+          ctx.fill();
+          ctx.strokeStyle = "#8a8a94";
+          ctx.lineWidth = mobile ? 1.4 : 2.0;
+          ctx.stroke();
+        });
+        ctx.save();
+        ctx.globalCompositeOperation = "overlay";
+        ctx.globalAlpha = 0.25;
+        ctx.fillStyle = ctx.createPattern(noiseTile, "repeat");
+        ctx.fillRect(0, 0, W, H);
+        ctx.restore();
+
+        trace(FALLBACK_VENEZUELA);
+        ctx.fillStyle = "#82828c";
+        ctx.fill();
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = mobile ? 2.0 : 3.0;
+        ctx.stroke();
+      }
+
+      const bumpCanvas = document.createElement("canvas");
+      bumpCanvas.width = RW;
+      bumpCanvas.height = RH;
+      const btx = bumpCanvas.getContext("2d");
+
+      if (topoImg) {
+        drawMonochromeTopography(btx, topoImg, RW, RH, false);
+      } else {
+        btx.fillStyle = "#181818";
+        btx.fillRect(0, 0, RW, RH);
+        btx.globalAlpha = 0.45;
+        btx.fillStyle = btx.createPattern(noiseTile, "repeat");
+        btx.fillRect(0, 0, RW, RH);
+      }
+
+      const roughCanvas = document.createElement("canvas");
+      roughCanvas.width = RW;
+      roughCanvas.height = RH;
+      const rtx = roughCanvas.getContext("2d");
+
+      if (waterImg) {
+        drawMonochromeTopography(rtx, waterImg, RW, RH, true);
+      } else {
+        rtx.fillStyle = "#7a7a7a";
+        rtx.fillRect(0, 0, RW, RH);
+      }
+
+      return { colorCanvas, bumpCanvas, roughCanvas };
+    }
+
+    function createRingTextCanvas(isGlow) {
+      const mobile = isMobileViewport();
+      const W = mobile ? 2048 : 4096;
+      const H = mobile ? 192 : 320;
+      const c = document.createElement("canvas");
+      c.width = W;
+      c.height = H;
+      const ctx = c.getContext("2d");
+
+      ctx.clearRect(0, 0, W, H);
+      const text = "THE WORLD IS YOURS";
+      const fontSize = mobile ? 124 : 212;
+      ctx.font = `400 ${fontSize}px "Bebas Neue", Impact, "Arial Narrow", sans-serif`;
+      ctx.textBaseline = "middle";
+      ctx.textAlign = "left";
+
+      const tracking = mobile ? 11 : 20;
+      const chars = text.split("");
+      let totalW = 0;
+      const widths = chars.map((ch) => {
+        const w = ctx.measureText(ch).width;
+        totalW += w + tracking;
+        return w;
+      });
+      totalW -= tracking;
+
+      const maxW = W * 0.86;
+      const scaleX = totalW > maxW ? maxW / totalW : 1;
+
+      ctx.save();
+      ctx.translate(W / 2, H / 2 + (mobile ? 4 : 6));
+      ctx.scale(scaleX, 1);
+
+      if (isGlow) {
+        ctx.shadowColor = "#ffffff";
+        ctx.shadowBlur = mobile ? 20 : 34;
+      }
+
+      ctx.fillStyle = "#ffffff";
+      let cursorX = -totalW / 2;
+      chars.forEach((ch, idx) => {
+        ctx.fillText(ch, cursorX, 0);
+        cursorX += widths[idx] + tracking;
+      });
+      ctx.restore();
+
+      return c;
+    }
+
+    function createFresnelAtmosphere(isOuter) {
+      const geo = isOuter
+        ? new THREE.SphereGeometry(1.09, 72, 72)
+        : new THREE.SphereGeometry(1.004, 72, 72);
+
+      const mat = new THREE.ShaderMaterial({
+        uniforms: {
+          uBaseColor: { value: new THREE.Color(0xd8dde8) },
+          uNeonColor: { value: new THREE.Color(0xeb1c30) }
+        },
+        vertexShader: `
+          varying vec3 vNormal;
+          varying vec3 vViewDir;
+          void main() {
+            vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+            vNormal = normalize(normalMatrix * normal);
+            vViewDir = normalize(-mvPosition.xyz);
+            gl_Position = projectionMatrix * mvPosition;
+          }
+        `,
+        fragmentShader: isOuter
+          ? `
+            uniform vec3 uBaseColor;
+            uniform vec3 uNeonColor;
+            varying vec3 vNormal;
+            varying vec3 vViewDir;
+            void main() {
+              float d = -dot(vNormal, vViewDir);
+              float intensity = pow(clamp(d / 0.42, 0.0, 1.0), 3.0);
+              vec3 col = mix(uBaseColor, uNeonColor, 0.22);
+              gl_FragColor = vec4(col, intensity * 0.42);
+            }
+          `
+          : `
+            uniform vec3 uBaseColor;
+            uniform vec3 uNeonColor;
+            varying vec3 vNormal;
+            varying vec3 vViewDir;
+            void main() {
+              float fresnel = pow(1.0 - max(0.0, dot(vNormal, vViewDir)), 4.4);
+              vec3 col = mix(uBaseColor, uNeonColor, 0.18);
+              gl_FragColor = vec4(col, fresnel * 0.55);
+            }
+          `,
+        side: isOuter ? THREE.BackSide : THREE.FrontSide,
+        blending: THREE.AdditiveBlending,
+        transparent: true,
+        depthWrite: false
+      });
+
+      return new THREE.Mesh(geo, mat);
+    }
+
+    function initThreeIntro() {
+      const canvas = document.getElementById("globeCanvas");
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      const aspect = w / Math.max(1, h);
+
+      scene = new THREE.Scene();
+      camera = new THREE.PerspectiveCamera(GLOBE_FOV, aspect, 0.1, 100);
+      camera.position.set(0, 0, getResponsiveCamZ(aspect));
+
+      renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: "high-performance" });
+      renderer.setClearColor(0x000000, 0);
+      renderer.setSize(w, h);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.18;
+
+      const ambient = new THREE.AmbientLight(0xffffff, 0.25);
+      scene.add(ambient);
+
+      rimLight = new THREE.DirectionalLight(0xffffff, 2.55);
+      rimLight.position.set(4.0, 2.3, 1.35);
+      scene.add(rimLight);
+
+      const backRim = new THREE.DirectionalLight(0xdce6f5, 0.85);
+      backRim.position.set(-2.5, 2.8, -3.5);
+      scene.add(backRim);
+
+      const fillLight = new THREE.DirectionalLight(0xd2dce8, 0.36);
+      fillLight.position.set(-3.2, -1.4, 2.5);
+      scene.add(fillLight);
+
+      neonLightL = new THREE.PointLight(0xeb1c30, 2.6, 5.2);
+      neonLightL.position.set(-1.35, 0.04, 1.08);
+      scene.add(neonLightL);
+
+      neonLightR = new THREE.PointLight(0xeb1c30, 2.2, 5.2);
+      neonLightR.position.set(1.35, -0.04, 1.08);
+      scene.add(neonLightR);
+
+      parallaxGroup = new THREE.Group();
+      scene.add(parallaxGroup);
+
+      globeTiltGroup = new THREE.Group();
+      globeTiltGroup.rotation.set(0.14, 0, -0.04);
+      parallaxGroup.add(globeTiltGroup);
+
+      // Build fast immediate globe first so screen is NEVER blank
+      const { colorCanvas, bumpCanvas, roughCanvas } = buildGlobeTextures(null, null, null);
+      const maxAniso = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+
+      const colorTex = new THREE.CanvasTexture(colorCanvas);
+      colorTex.anisotropy = maxAniso;
+      const bumpTex = new THREE.CanvasTexture(bumpCanvas);
+      const roughTex = new THREE.CanvasTexture(roughCanvas);
+
+      const segs = isMobileViewport() ? 80 : 128;
+      const sphereGeo = new THREE.SphereGeometry(1, segs, segs);
+      const sphereMat = new THREE.MeshStandardMaterial({
+        map: colorTex,
+        bumpMap: bumpTex,
+        bumpScale: 0.08,
+        roughnessMap: roughTex,
+        roughness: 0.82,
+        metalness: 0.16
+      });
+      globeMesh = new THREE.Mesh(sphereGeo, sphereMat);
+      globeMesh.rotation.y = -0.65;
+      globeTiltGroup.add(globeMesh);
+
+      const atmosInner = createFresnelAtmosphere(false);
+      atmosInnerMat = atmosInner.material;
+      globeTiltGroup.add(atmosInner);
+
+      const atmosOuter = createFresnelAtmosphere(true);
+      atmosOuterMat = atmosOuter.material;
+      globeTiltGroup.add(atmosOuter);
+
+      // Venezuela Locator Pin
+      const theta = THREE.MathUtils.degToRad(90 - VENEZUELA_LAT);
+      const phi = THREE.MathUtils.degToRad(VENEZUELA_LON + 180);
+      const rPin = 1.008;
+      const pinPos = new THREE.Vector3(
+        -rPin * Math.cos(phi) * Math.sin(theta),
+        rPin * Math.cos(theta),
+        rPin * Math.sin(phi) * Math.sin(theta)
+      );
+      const pinNormal = pinPos.clone().normalize();
+
+      venezuelaBeaconMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0 });
+      const pinDot = new THREE.Mesh(new THREE.SphereGeometry(0.013, 16, 16), venezuelaBeaconMat);
+      pinDot.position.copy(pinPos);
+      globeMesh.add(pinDot);
+
+      const ringGeo = new THREE.RingGeometry(0.025, 0.033, 48);
+      const ringMat = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide, transparent: true, opacity: 0 });
+      venezuelaRingMesh = new THREE.Mesh(ringGeo, ringMat);
+      venezuelaRingMesh.position.copy(pinPos);
+      venezuelaRingMesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), pinNormal);
+      globeMesh.add(venezuelaRingMesh);
+
+      // 3D "THE WORLD IS YOURS" Ring Stack
+      ringGroup = new THREE.Group();
+      ringGroup.rotation.z = -0.042;
+      parallaxGroup.add(ringGroup);
+
+      const textTex = new THREE.CanvasTexture(createRingTextCanvas(false));
+      textTex.anisotropy = maxAniso;
+      const glowTex = new THREE.CanvasTexture(createRingTextCanvas(true));
+
+      const arc = Math.PI * 1.18;
+      const cylHeight = 0.255;
+
+      const layerSpecs = [];
+      for (let i = 0; i < 8; i++) {
+        const t = i / 7;
+        layerSpecs.push({
+          r: 1.26 - i * 0.006,
+          shade: i === 0 ? 1.0 : 0.48 - t * 0.28,
+          opacity: i === 0 ? 1.0 : 0.96
+        });
+      }
+
+      ringLayers = layerSpecs.map((spec) => {
+        const geo = new THREE.CylinderGeometry(spec.r, spec.r, cylHeight, 128, 1, true, -arc / 2, arc);
+        const mat = new THREE.MeshBasicMaterial({
+          map: textTex,
+          color: 0xffffff,
+          transparent: true,
+          alphaTest: 0.08,
+          opacity: spec.opacity,
+          side: THREE.DoubleSide
+        });
+        const mesh = new THREE.Mesh(geo, mat);
+        ringGroup.add(mesh);
+        return { mat, shade: spec.shade, baseOpacity: spec.opacity };
+      });
+
+      const glowGeo = new THREE.CylinderGeometry(1.264, 1.264, cylHeight, 128, 1, true, -arc / 2, arc);
+      const glowMat = new THREE.MeshBasicMaterial({
+        map: glowTex,
+        color: 0xffffff,
+        transparent: true,
+        opacity: 0.45,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+        side: THREE.DoubleSide
+      });
+      glowLayer = new THREE.Mesh(glowGeo, glowMat);
+      ringGroup.add(glowLayer);
+
+      window.addEventListener("resize", onThreeResize);
+      window.addEventListener("orientationchange", () => setTimeout(onThreeResize, 120));
+      window.addEventListener("pointermove", onPointerParallax);
+      introState.useThree = true;
+    }
+
+    function upgradeRingTextAfterFont() {
+      if (!introState.useThree || !ringLayers.length) return;
+      const newTextTex = new THREE.CanvasTexture(createRingTextCanvas(false));
+      newTextTex.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+      const newGlowTex = new THREE.CanvasTexture(createRingTextCanvas(true));
+
+      ringLayers.forEach((l) => {
+        if (l.mat.map) l.mat.map.dispose();
+        l.mat.map = newTextTex;
+        l.mat.needsUpdate = true;
+      });
+      if (glowLayer) {
+        if (glowLayer.material.map) glowLayer.material.map.dispose();
+        glowLayer.material.map = newGlowTex;
+        glowLayer.material.needsUpdate = true;
+      }
+    }
+
+    function upgradeGlobeTexturesAsync(worldTopo, topoImg, waterImg) {
+      if (!introState.useThree || !globeMesh) return;
+      if (!worldTopo && !topoImg && !waterImg) return;
+
+      const { colorCanvas, bumpCanvas, roughCanvas } = buildGlobeTextures(worldTopo, topoImg, waterImg);
+      const maxAniso = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+
+      const colorTex = new THREE.CanvasTexture(colorCanvas);
+      colorTex.anisotropy = maxAniso;
+      const bumpTex = new THREE.CanvasTexture(bumpCanvas);
+      const roughTex = new THREE.CanvasTexture(roughCanvas);
+
+      const m = globeMesh.material;
+      if (m.map) m.map.dispose();
+      if (m.bumpMap) m.bumpMap.dispose();
+      if (m.roughnessMap) m.roughnessMap.dispose();
+
+      m.map = colorTex;
+      m.bumpMap = bumpTex;
+      m.roughnessMap = roughTex;
+      m.needsUpdate = true;
+    }
+
+    function onPointerParallax(e) {
+      if (introState.phase !== "idle" || e.pointerType === "touch") return;
+      introState.mouseX = (e.clientX / window.innerWidth - 0.5) * 2;
+      introState.mouseY = (e.clientY / window.innerHeight - 0.5) * 2;
+    }
+
+    function onThreeResize() {
+      if (!renderer || !camera) return;
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      const aspect = w / Math.max(1, h);
+      camera.aspect = aspect;
+      if (introState.phase === "idle" || introState.phase === "textZoom") {
+        camera.position.z = getResponsiveCamZ(aspect);
+      }
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h);
+    }
+
+    const easeOutQuart = (t) => 1 - Math.pow(1 - t, 4);
+    const easeInCubic = (t) => t * t * t;
+
+    let lastFrameTime = performance.now();
+    let elapsedTotal = 0;
+
+    function animateIntro(now) {
+      if (introState.phase === "done") return;
+
+      const dt = Math.min(0.05, (now - lastFrameTime) / 1000);
+      lastFrameTime = now;
+      elapsedTotal += dt;
+
+      const blend = 0.5 + 0.5 * Math.sin(elapsedTotal * 0.85);
+      const rCol = Math.round(235 + (36 - 235) * blend);
+      const gCol = Math.round(28 + (132 - 28) * blend);
+      const bCol = Math.round(48 + (255 - 48) * blend);
+
+      if (introState.useThree) {
+        const neonColor = new THREE.Color(rCol / 255, gCol / 255, bCol / 255);
+
+        ringLayers.forEach((layer) => { layer.mat.color.copy(neonColor).multiplyScalar(layer.shade); });
+        if (glowLayer) glowLayer.material.color.copy(neonColor);
+
+        neonLightL.color.copy(neonColor);
+        neonLightR.color.copy(neonColor);
+        if (atmosOuterMat) atmosOuterMat.uniforms.uNeonColor.value.copy(neonColor);
+        if (atmosInnerMat) atmosInnerMat.uniforms.uNeonColor.value.copy(neonColor);
+
+        if (introState.phase === "idle") {
+          globeMesh.rotation.y += dt * 0.30;
+          ringGroup.rotation.y = Math.sin(elapsedTotal * 0.55) * 0.06;
+
+          parallaxGroup.rotation.y += (introState.mouseX * 0.08 - parallaxGroup.rotation.y) * 0.06;
+          parallaxGroup.rotation.x += (introState.mouseY * 0.06 - parallaxGroup.rotation.x) * 0.06;
+        }
+        else if (introState.phase === "textZoom") {
+          introState.phaseTime += dt;
+          const p = Math.min(1, introState.phaseTime / 0.85);
+
+          parallaxGroup.rotation.y *= 0.92;
+          parallaxGroup.rotation.x *= 0.92;
+
+          const zoomScale = 1 + Math.pow(p, 2.15) * 4.0;
+          ringGroup.scale.setScalar(zoomScale);
+          const fade = Math.max(0, 1 - Math.pow(p, 1.35));
+
+          ringLayers.forEach((layer) => { layer.mat.opacity = layer.baseOpacity * fade; });
+          glowLayer.material.opacity = 0.45 * fade;
+
+          globeMesh.rotation.y += dt * 0.55;
+
+          if (p >= 1) {
+            ringGroup.visible = false;
+            beginSpinToVenezuela();
+          }
+        }
+        else if (introState.phase === "spinVenezuela") {
+          introState.phaseTime += dt;
+          const duration = 1.85;
+          const p = Math.min(1, introState.phaseTime / duration);
+          const eased = easeOutQuart(p);
+
+          parallaxGroup.rotation.set(0, 0, 0);
+          globeMesh.rotation.y = introState.startRotY + (introState.targetRotY - introState.startRotY) * eased;
+          globeTiltGroup.rotation.x = introState.startRotX + (introState.targetRotX - introState.startRotX) * eased;
+          globeTiltGroup.rotation.z = -0.04 * (1 - eased);
+
+          camera.position.z = introState.startCamZ + (introState.targetCamZ - introState.startCamZ) * eased;
+
+          venezuelaBeaconMat.opacity = Math.max(0, (eased - 0.35) / 0.65);
+          venezuelaRingMesh.material.opacity = Math.max(0, (eased - 0.35) / 0.65) * 0.85;
+          venezuelaRingMesh.scale.setScalar(1 + Math.sin(elapsedTotal * 4.5) * 0.18);
+
+          if (p >= 1) {
+            introState.phase = "pauseVenezuela";
+            introState.phaseTime = 0;
+            document.getElementById("venezuelaTag").classList.add("visible");
+          }
+        }
+        else if (introState.phase === "pauseVenezuela") {
+          introState.phaseTime += dt;
+          venezuelaRingMesh.scale.setScalar(1 + Math.sin(elapsedTotal * 5) * 0.22);
+
+          if (introState.phaseTime >= 0.72) {
+            introState.phase = "globeZoom";
+            introState.phaseTime = 0;
+            document.getElementById("venezuelaTag").classList.remove("visible");
+          }
+        }
+        else if (introState.phase === "globeZoom") {
+          introState.phaseTime += dt;
+          const duration = 0.85;
+          const p = Math.min(1, introState.phaseTime / duration);
+
+          const zoom = 1 + easeInCubic(p) * 5.2;
+          globeTiltGroup.scale.setScalar(zoom);
+
+          const canvasOpacity = p < 0.32 ? 1 : Math.max(0, 1 - (p - 0.32) / 0.68);
+          document.getElementById("globeCanvas").style.opacity = canvasOpacity;
+          document.getElementById("introBrandTop").style.opacity = Math.max(0, 1 - p * 2.5);
+
+          if (p >= 1) {
+            introState.phase = "done";
+            finishIntroToStore();
+            return;
+          }
+        }
+
+        renderer.render(scene, camera);
+      } else {
+        renderFallback2D(dt, `rgb(${rCol},${gCol},${bCol})`);
+      }
+
+      introState.animId = requestAnimationFrame(animateIntro);
+    }
+
+    function beginSpinToVenezuela() {
+      introState.phase = "spinVenezuela";
+      introState.phaseTime = 0;
+
+      if (introState.useThree) {
+        introState.startRotY = globeMesh.rotation.y;
+        introState.startRotX = globeTiltGroup.rotation.x;
+        introState.startCamZ = camera.position.z;
+        introState.targetCamZ = camera.position.z * 0.78;
+
+        const baseTargetY = -Math.PI / 2 - THREE.MathUtils.degToRad(VENEZUELA_LON);
+        const twoPi = Math.PI * 2;
+        let targetY = baseTargetY + Math.ceil((introState.startRotY - baseTargetY) / twoPi) * twoPi;
+        if (targetY - introState.startRotY < Math.PI * 0.9) targetY += twoPi;
+
+        introState.targetRotY = targetY;
+        introState.targetRotX = THREE.MathUtils.degToRad(VENEZUELA_LAT);
+      }
+    }
+
+    function startIntroExitSequence() {
+      if (introState.phase !== "idle") return;
+      document.getElementById("welcomeBtn").classList.add("fade-out");
+      introState.phase = "textZoom";
+      introState.phaseTime = 0;
+    }
+
+    // Direct transition to store (No intermediate loading screen)
+    function finishIntroToStore() {
+      const introOverlay = document.getElementById("introOverlay");
+      introOverlay.classList.add("hidden");
+      document.body.classList.remove("intro-active");
+      cancelAnimationFrame(introState.animId);
+    }
+
+    function replayIntro() {
+      closeAllOverlays();
+      window.scrollTo(0, 0);
+      document.body.classList.add("intro-active");
+
+      const introOverlay = document.getElementById("introOverlay");
+      const welcomeBtn = document.getElementById("welcomeBtn");
+      const canvas = document.getElementById("globeCanvas");
+
+      introOverlay.classList.remove("hidden");
+      welcomeBtn.classList.remove("fade-out");
+      canvas.style.opacity = "1";
+      document.getElementById("introBrandTop").style.opacity = "1";
+      document.getElementById("venezuelaTag").classList.remove("visible");
+
+      if (introState.useThree) {
+        const aspect = window.innerWidth / Math.max(1, window.innerHeight);
+        camera.aspect = aspect;
+        camera.position.set(0, 0, getResponsiveCamZ(aspect));
+        camera.updateProjectionMatrix();
+        parallaxGroup.rotation.set(0, 0, 0);
+
+        ringGroup.visible = true;
+        ringGroup.scale.setScalar(1);
+        ringLayers.forEach((l) => (l.mat.opacity = l.baseOpacity));
+        glowLayer.material.opacity = 0.45;
+
+        globeTiltGroup.scale.setScalar(1);
+        globeTiltGroup.rotation.set(0.14, 0, -0.04);
+        venezuelaBeaconMat.opacity = 0;
+        venezuelaRingMesh.material.opacity = 0;
+      }
+
+      introState.phase = "idle";
+      introState.phaseTime = 0;
+      lastFrameTime = performance.now();
+      cancelAnimationFrame(introState.animId);
+      introState.animId = requestAnimationFrame(animateIntro);
+    }
+
+    /* ========================================================================
+       2D SPHERE-PROJECTED FALLBACK (Works offline or in restricted iOS viewers)
+       ======================================================================== */
+    let fallbackRotY = -0.65;
+    let fallbackTiltX = 0.14;
+    let fallbackStartRotY = 0;
+    let fallbackTargetRotY = 0;
+
+    function projectPoint3D(lon, lat, rotY, tiltX) {
+      const phi = ((lon + 180) * Math.PI) / 180;
+      const theta = ((90 - lat) * Math.PI) / 180;
+      const x0 = -Math.cos(phi) * Math.sin(theta);
+      const y0 = Math.cos(theta);
+      const z0 = Math.sin(phi) * Math.sin(theta);
+
+      const x1 = x0 * Math.cos(rotY) + z0 * Math.sin(rotY);
+      const y1 = y0;
+      const z1 = -x0 * Math.sin(rotY) + z0 * Math.cos(rotY);
+
+      const x2 = x1;
+      const y2 = y1 * Math.cos(tiltX) - z1 * Math.sin(tiltX);
+      const z2 = y1 * Math.sin(tiltX) + z1 * Math.cos(tiltX);
+      return { x: x2, y: y2, z: z2 };
+    }
+
+    function renderFallback2D(dt, neonCssColor) {
+      const canvas = document.getElementById("globeCanvas");
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      if (canvas.width !== Math.round(w * dpr) || canvas.height !== Math.round(h * dpr)) {
+        canvas.width = Math.round(w * dpr);
+        canvas.height = Math.round(h * dpr);
+      }
+
+      const ctx = canvas.getContext("2d");
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, w, h);
+
+      let globeScale = 1;
+      let textScale = 1;
+      let textAlpha = 1;
+      let globeAlpha = 1;
+      let venHighlight = 0;
+
+      if (introState.phase === "idle") {
+        fallbackRotY += dt * 0.32;
+      } else if (introState.phase === "textZoom") {
+        introState.phaseTime += dt;
+        const p = Math.min(1, introState.phaseTime / 0.85);
+        textScale = 1 + Math.pow(p, 2) * 3.8;
+        textAlpha = Math.max(0, 1 - Math.pow(p, 1.3));
+        fallbackRotY += dt * 0.55;
+        if (p >= 1) {
+          introState.phase = "spinVenezuela";
+          introState.phaseTime = 0;
+          fallbackStartRotY = fallbackRotY;
+          const baseY = -Math.PI / 2 - (VENEZUELA_LON * Math.PI) / 180;
+          const twoPi = Math.PI * 2;
+          fallbackTargetRotY = baseY + Math.ceil((fallbackStartRotY - baseY) / twoPi) * twoPi;
+          if (fallbackTargetRotY - fallbackStartRotY < Math.PI * 0.9) fallbackTargetRotY += twoPi;
+        }
+      } else if (introState.phase === "spinVenezuela") {
+        introState.phaseTime += dt;
+        const p = Math.min(1, introState.phaseTime / 1.8);
+        const eased = easeOutQuart(p);
+        fallbackRotY = fallbackStartRotY + (fallbackTargetRotY - fallbackStartRotY) * eased;
+        fallbackTiltX = 0.14 + ((VENEZUELA_LAT * Math.PI) / 180 - 0.14) * eased;
+        globeScale = 1 + 0.22 * eased;
+        venHighlight = eased;
+        if (p >= 1) {
+          introState.phase = "pauseVenezuela";
+          introState.phaseTime = 0;
+          document.getElementById("venezuelaTag").classList.add("visible");
+        }
+      } else if (introState.phase === "pauseVenezuela") {
+        introState.phaseTime += dt;
+        globeScale = 1.22;
+        venHighlight = 1;
+        if (introState.phaseTime >= 0.72) {
+          introState.phase = "globeZoom";
+          introState.phaseTime = 0;
+          document.getElementById("venezuelaTag").classList.remove("visible");
+        }
+      } else if (introState.phase === "globeZoom") {
+        introState.phaseTime += dt;
+        const p = Math.min(1, introState.phaseTime / 0.85);
+        globeScale = 1.22 + easeInCubic(p) * 5.0;
+        globeAlpha = p < 0.3 ? 1 : Math.max(0, 1 - (p - 0.3) / 0.7);
+        document.getElementById("introBrandTop").style.opacity = Math.max(0, 1 - p * 2.5);
+        if (p >= 1) {
+          introState.phase = "done";
+          finishIntroToStore();
+          return;
+        }
+      }
+
+      const cx = w / 2;
+      const cy = h / 2;
+      const baseRadius = Math.min(w * 0.32, h * 0.24);
+      const R = baseRadius * globeScale;
+
+      // Draw projected sphere & continents
+      ctx.save();
+      ctx.globalAlpha = globeAlpha;
+
+      // Atmosphere glow
+      const halo = ctx.createRadialGradient(cx, cy, R * 0.92, cx, cy, R * 1.15);
+      halo.addColorStop(0, "rgba(220,225,235,0.22)");
+      halo.addColorStop(1, "rgba(0,0,0,0)");
+      ctx.fillStyle = halo;
+      ctx.beginPath();
+      ctx.arc(cx, cy, R * 1.15, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Clip inside globe disk
+      ctx.beginPath();
+      ctx.arc(cx, cy, R, 0, Math.PI * 2);
+      ctx.clip();
+
+      const oceanGrad = ctx.createRadialGradient(cx + R * 0.42, cy - R * 0.35, R * 0.1, cx, cy, R * 1.15);
+      oceanGrad.addColorStop(0, "#242429");
+      oceanGrad.addColorStop(0.55, "#0d0d10");
+      oceanGrad.addColorStop(1, "#040405");
+      ctx.fillStyle = oceanGrad;
+      ctx.fillRect(cx - R, cy - R, R * 2, R * 2);
+
+      const drawSpherePoly = (pts, fill, stroke, lw) => {
+        ctx.beginPath();
+        let started = false;
+        for (let i = 0; i < pts.length; i++) {
+          const [lon1, lat1] = pts[i];
+          const [lon2, lat2] = pts[(i + 1) % pts.length];
+          for (let s = 0; s < 4; s++) {
+            const t = s / 4;
+            const p3 = projectPoint3D(lon1 + (lon2 - lon1) * t, lat1 + (lat2 - lat1) * t, fallbackRotY, fallbackTiltX);
+            if (p3.z > -0.08) {
+              const sx = cx + p3.x * R;
+              const sy = cy - p3.y * R;
+              if (!started) { ctx.moveTo(sx, sy); started = true; }
+              else ctx.lineTo(sx, sy);
+            }
+          }
+        }
+        if (started) {
+          ctx.closePath();
+          ctx.fillStyle = fill;
+          ctx.fill();
+          ctx.strokeStyle = stroke;
+          ctx.lineWidth = lw;
+          ctx.stroke();
+        }
+      };
+
+      FALLBACK_CONTINENTS.forEach((poly) => drawSpherePoly(poly, "rgba(110,110,118,0.45)", "rgba(210,210,220,0.45)", 0.9));
+      drawSpherePoly(FALLBACK_VENEZUELA, `rgba(220,220,235,${0.4 + venHighlight * 0.4})`, "#ffffff", 1.5);
+
+      // Rim edge highlight
+      ctx.beginPath();
+      ctx.arc(cx, cy, R - 1, 0, Math.PI * 2);
+      ctx.strokeStyle = "rgba(255,255,255,0.22)";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.restore();
+
+      // Curved "THE WORLD IS YOURS" text across equator
+      if (textAlpha > 0.01) {
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.scale(textScale, textScale);
+        ctx.globalAlpha = textAlpha;
+        const fontPx = Math.max(24, Math.min(w * 0.085, baseRadius * 0.34));
+        ctx.font = `400 ${fontPx}px "Bebas Neue", Impact, sans-serif`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.shadowColor = neonCssColor;
+        ctx.shadowBlur = 16;
+        ctx.fillStyle = neonCssColor;
+        ctx.fillText("THE WORLD IS YOURS", 0, 0);
+        ctx.restore();
+      }
+    }
+
+    /* ========================================================================
+       PART 2: CENTRAL DISTRICT STOREFRONT ENGINE & UPLOAD PLACEHOLDERS
+       ======================================================================== */
+    const PRODUCTS = [
+      { id: 1, title: "Sanctuary Heavyweight Hoodie — Onyx", category: "hoodies", priceUSD: 145, badge: "New Arrival", sizes: ["S", "M", "L", "XL", "XXL"], fabric: "480gsm loopback organic cotton. Drop-shoulder boxy silhouette.", image: "", hoverImage: "" },
+      { id: 2, title: "District Script Tee — Chalk", category: "t-shirts", priceUSD: 65, badge: "", sizes: ["S", "M", "L", "XL", "XXL"], fabric: "260gsm combed heavy jersey. Embroidered chest mark.", image: "", hoverImage: "" },
+      { id: 3, title: "Atelier Quarter-Zip Sweatshirt — Stone", category: "hoodies", priceUSD: 135, badge: "Restock", sizes: ["S", "M", "L", "XL", "XXL"], fabric: "440gsm brushed fleece with matte silver RiRi zipper.", image: "", hoverImage: "" },
+      { id: 4, title: "Metropolitan Down Puffer — Matte Black", category: "outerwear", priceUSD: 260, badge: "Limited", sizes: ["S", "M", "L", "XL"], fabric: "Water-repellent Japanese nylon shell with recycled down fill.", image: "", hoverImage: "" },
+      { id: 5, title: "Archive Graphic Tee — Washed Charcoal", category: "t-shirts", priceUSD: 70, badge: "", sizes: ["S", "M", "L", "XL", "XXL"], fabric: "Garment-dyed 260gsm cotton with distressed vintage wash.", image: "", hoverImage: "" },
+      { id: 6, title: "Avenue Melton Wool Overshirt — Slate", category: "outerwear", priceUSD: 185, badge: "New Arrival", sizes: ["S", "M", "L", "XL"], fabric: "Italian virgin wool blend with tonal horn buttons.", image: "", hoverImage: "" },
+      { id: 7, title: "Central Studio Sweatpant — Heather Grey", category: "hoodies", priceUSD: 120, badge: "", sizes: ["S", "M", "L", "XL"], fabric: "Relaxed straight-leg cut in 460gsm heavyweight fleece.", image: "", hoverImage: "" },
+      { id: 8, title: "District Embroidered Cap — Navy", category: "accessories", priceUSD: 55, badge: "", sizes: ["One Size"], fabric: "6-panel brushed cotton twill with adjustable metal clasp.", image: "", hoverImage: "" }
+    ];
+
+    const CURRENCIES = { USD: { symbol: "$", rate: 1 }, GBP: { symbol: "£", rate: 0.79 }, EUR: { symbol: "€", rate: 0.92 } };
+    let currentCurrency = "USD";
+    let activeFilter = "all";
+    let cart = [];
+    let pendingUploadCallback = null;
+    let activeQuickViewId = null;
+    let selectedQuickViewSize = null;
+
+    function formatPrice(usdAmount) {
+      const cfg = CURRENCIES[currentCurrency];
+      return `${cfg.symbol}${(usdAmount * cfg.rate).toFixed(2)}`;
+    }
+
+    function setCurrency(code) {
+      currentCurrency = code;
+      document.getElementById("currencySelectTop").value = code;
+      document.getElementById("currencySelectBottom").value = code;
+      document.getElementById("announcementText").textContent = `COMPLIMENTARY WORLDWIDE SHIPPING ON ORDERS OVER ${formatPrice(150)}`;
+      document.querySelectorAll(".upsell-price").forEach((el) => { el.textContent = formatPrice(Number(el.dataset.usd)); });
+      renderProducts();
+      renderCart();
+    }
+
+    function renderProducts() {
+      const grid = document.getElementById("productGrid");
+      const filtered = activeFilter === "all" ? PRODUCTS : PRODUCTS.filter((p) => p.category === activeFilter);
+
+      grid.innerHTML = filtered.map((p) => {
+        const hasMain = Boolean(p.image);
+        const hasAlt = Boolean(p.hoverImage);
+        return `
+          <article class="product-card" data-id="${p.id}">
+            <div class="product-media upload-slot ${hasMain ? "has-image" : ""}" onclick="handleProductMediaClick(event, ${p.id})" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleProductDrop(event, ${p.id})">
+              ${p.badge ? `<span class="product-badge">${p.badge}</span>` : ""}
+              <img class="slot-img" src="${p.image || ""}" alt="${p.title}" />
+              <img class="slot-img slot-img-alt ${hasAlt ? "has-alt" : ""}" src="${p.hoverImage || ""}" alt="${p.title} alternate view" />
+              <div class="upload-prompt">
+                <svg class="upload-icon" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18"/><path d="M12 8v8M8 12h8"/></svg>
+                <div class="upload-label">Product Photo — 4:5</div>
+                <div class="upload-hint">Tap or drop image</div>
+              </div>
+              <div class="slot-controls">
+                <button class="slot-ctrl-btn" onclick="uploadProductImg(event, ${p.id}, 'image')">Replace</button>
+                <button class="slot-ctrl-btn" onclick="uploadProductImg(event, ${p.id}, 'hoverImage')">${hasAlt ? "Alt View" : "+ Alt"}</button>
+                <button class="slot-ctrl-btn" onclick="clearProductImgs(event, ${p.id})">Remove</button>
+              </div>
+              <div class="quick-size-bar" onclick="event.stopPropagation()">
+                ${p.sizes.map((size) => `<button class="quick-size-btn" onclick="addToCart(${p.id}, '${size}')">${size}</button>`).join("")}
+              </div>
+            </div>
+            <div class="product-info">
+              <div class="product-title-row">
+                <button class="product-title" onclick="openQuickView(${p.id})">${p.title}</button>
+                <span class="product-price">${formatPrice(p.priceUSD)}</span>
+              </div>
+              <div class="product-meta">${p.sizes.join(" · ")}</div>
+            </div>
+          </article>
+        `;
+      }).join("");
+      updateUploadCounter();
+    }
+
+    function filterProducts(category) {
+      activeFilter = category;
+      document.querySelectorAll(".filter-btn").forEach((btn) => btn.classList.toggle("active", btn.dataset.filter === category));
+      renderProducts();
+    }
+
+    function filterAndScroll(category) {
+      filterProducts(category);
+      document.getElementById("shop").scrollIntoView({ behavior: "smooth" });
+    }
+
+    const fileInput = document.getElementById("globalFileInput");
+    fileInput.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (file && file.type.startsWith("image/") && pendingUploadCallback) pendingUploadCallback(URL.createObjectURL(file));
+      fileInput.value = "";
+      pendingUploadCallback = null;
+    });
+
+    function openFilePicker(callback) { pendingUploadCallback = callback; fileInput.click(); }
+
+    function initStaticUploadSlots() {
+      document.querySelectorAll(".upload-slot[data-slot]").forEach((slotEl) => {
+        const slotKey = slotEl.dataset.slot;
+        const img = slotEl.querySelector(".slot-img");
+        if (img && img.getAttribute("src")) slotEl.classList.add("has-image");
+
+        slotEl.addEventListener("click", () => {
+          if (document.body.classList.contains("preview-mode")) return;
+          if (!slotEl.classList.contains("has-image")) triggerSlotUpload(null, slotKey);
+        });
+        slotEl.addEventListener("dragover", handleDragOver);
+        slotEl.addEventListener("dragleave", handleDragLeave);
+        slotEl.addEventListener("drop", (e) => {
+          e.preventDefault();
+          slotEl.classList.remove("drag-over");
+          const file = e.dataTransfer.files[0];
+          if (file && file.type.startsWith("image/")) applyStaticSlotImage(slotEl, URL.createObjectURL(file));
+        });
+      });
+    }
+
+    function triggerSlotUpload(e, slotKey) {
+      if (e) e.stopPropagation();
+      const slotEl = document.querySelector(`.upload-slot[data-slot="${slotKey}"]`);
+      openFilePicker((url) => applyStaticSlotImage(slotEl, url));
+    }
+
+    function applyStaticSlotImage(slotEl, url) {
+      const img = slotEl.querySelector(".slot-img");
+      if (img.src && img.src.startsWith("blob:")) URL.revokeObjectURL(img.src);
+      img.src = url;
+      slotEl.classList.add("has-image");
+      updateUploadCounter();
+      showToast("Image updated");
+    }
+
+    function clearSlotImage(e, slotKey) {
+      e.stopPropagation();
+      const slotEl = document.querySelector(`.upload-slot[data-slot="${slotKey}"]`);
+      const img = slotEl.querySelector(".slot-img");
+      if (img.src && img.src.startsWith("blob:")) URL.revokeObjectURL(img.src);
+      img.removeAttribute("src");
+      slotEl.classList.remove("has-image");
+      updateUploadCounter();
+    }
+
+    function handleProductMediaClick(e, productId) {
+      const product = PRODUCTS.find((p) => p.id === productId);
+      if (!product) return;
+      if (document.body.classList.contains("preview-mode") || product.image) { openQuickView(productId); return; }
+      uploadProductImg(e, productId, "image");
+    }
+
+    function uploadProductImg(e, productId, field) {
+      e.stopPropagation();
+      const product = PRODUCTS.find((p) => p.id === productId);
+      if (!product) return;
+      openFilePicker((url) => {
+        if (product[field] && product[field].startsWith("blob:")) URL.revokeObjectURL(product[field]);
+        product[field] = url;
+        syncCartImages(productId, product.image);
+        renderProducts();
+        showToast(field === "hoverImage" ? "Alternate product image added" : "Product image updated");
+      });
+    }
+
+    function clearProductImgs(e, productId) {
+      e.stopPropagation();
+      const product = PRODUCTS.find((p) => p.id === productId);
+      if (!product) return;
+      ["image", "hoverImage"].forEach((k) => {
+        if (product[k] && product[k].startsWith("blob:")) URL.revokeObjectURL(product[k]);
+        product[k] = "";
+      });
+      syncCartImages(productId, "");
+      renderProducts();
+    }
+
+    function handleDragOver(e) { e.preventDefault(); e.currentTarget.classList.add("drag-over"); }
+    function handleDragLeave(e) { e.currentTarget.classList.remove("drag-over"); }
+
+    function handleProductDrop(e, productId) {
+      e.preventDefault();
+      e.currentTarget.classList.remove("drag-over");
+      const file = e.dataTransfer.files[0];
+      if (!file || !file.type.startsWith("image/")) return;
+      const product = PRODUCTS.find((p) => p.id === productId);
+      if (!product) return;
+      const url = URL.createObjectURL(file);
+      if (!product.image) product.image = url;
+      else {
+        if (product.hoverImage && product.hoverImage.startsWith("blob:")) URL.revokeObjectURL(product.hoverImage);
+        product.hoverImage = url;
+      }
+      syncCartImages(productId, product.image);
+      renderProducts();
+      showToast("Product image uploaded");
+    }
+
+    function updateUploadCounter() {
+      const staticCount = document.querySelectorAll(".upload-slot[data-slot].has-image").length;
+      const productCount = PRODUCTS.filter((p) => Boolean(p.image)).length;
+      document.getElementById("uploadCounter").textContent = `${staticCount + productCount} / ${8 + PRODUCTS.length} Slots`;
+    }
+
+    function togglePreviewMode() {
+      const isPreview = document.body.classList.toggle("preview-mode");
+      document.getElementById("previewToggleBtn").textContent = isPreview ? "Edit" : "Preview";
+    }
+
+    function resetAllImages() {
+      document.querySelectorAll(".upload-slot[data-slot]").forEach((slotEl) => {
+        const img = slotEl.querySelector(".slot-img");
+        if (img.src && img.src.startsWith("blob:")) URL.revokeObjectURL(img.src);
+        img.removeAttribute("src");
+        slotEl.classList.remove("has-image");
+      });
+      PRODUCTS.forEach((p) => {
+        if (p.image && p.image.startsWith("blob:")) URL.revokeObjectURL(p.image);
+        if (p.hoverImage && p.hoverImage.startsWith("blob:")) URL.revokeObjectURL(p.hoverImage);
+        p.image = "";
+        p.hoverImage = "";
+      });
+      cart.forEach((item) => (item.image = ""));
+      renderProducts();
+      renderCart();
+      showToast("All image slots reset");
+    }
+
+    function addToCart(productId, size) {
+      const product = PRODUCTS.find((p) => p.id === productId);
+      if (!product) return;
+      const existing = cart.find((i) => i.id === productId && i.size === size);
+      if (existing) existing.qty += 1;
+      else cart.push({ id: product.id, title: product.title, priceUSD: product.priceUSD, size, qty: 1, image: product.image });
+      renderCart();
+      openCart();
+    }
+
+    function addUpsellToCart(id, title, priceUSD) {
+      const linkedProduct = PRODUCTS.find((p) => p.id === id);
+      const existing = cart.find((i) => i.id === id && i.size === "One Size");
+      if (existing) existing.qty += 1;
+      else cart.push({ id, title, priceUSD, size: "One Size", qty: 1, image: linkedProduct ? linkedProduct.image : "" });
+      renderCart();
+      showToast("Added to bag");
+    }
+
+    function syncCartImages(productId, newImage) {
+      cart.forEach((item) => { if (item.id === productId) item.image = newImage; });
+      renderCart();
+    }
+
+    function updateQty(index, delta) {
+      cart[index].qty += delta;
+      if (cart[index].qty <= 0) cart.splice(index, 1);
+      renderCart();
+    }
+
+    function renderCart() {
+      const totalCount = cart.reduce((sum, i) => sum + i.qty, 0);
+      const subtotalUSD = cart.reduce((sum, i) => sum + i.priceUSD * i.qty, 0);
+      document.getElementById("bagCount").textContent = totalCount;
+      document.getElementById("drawerBagCount").textContent = totalCount;
+      document.getElementById("cartSubtotal").textContent = formatPrice(subtotalUSD);
+
+      const thresholdUSD = 150;
+      document.getElementById("shippingBarFill").style.width = `${Math.min(100, (subtotalUSD / thresholdUSD) * 100)}%`;
+      document.getElementById("shippingText").textContent = subtotalUSD >= thresholdUSD
+        ? "You have unlocked complimentary shipping"
+        : `Spend ${formatPrice(thresholdUSD - subtotalUSD)} more for complimentary shipping`;
+
+      const container = document.getElementById("cartItemsContainer");
+      const footer = document.getElementById("cartFooter");
+
+      if (cart.length === 0) {
+        footer.style.display = "none";
+        container.innerHTML = `<div class="cart-empty"><p>Your bag is currently empty.</p><button class="btn-outline" onclick="closeAllOverlays()">Continue Shopping</button></div>`;
+        return;
+      }
+
+      footer.style.display = "block";
+      container.innerHTML = cart.map((item, idx) => `
+        <div class="cart-item">
+          <div class="cart-item-thumb">${item.image ? `<img src="${item.image}" alt="${item.title}" />` : "Photo"}</div>
+          <div class="cart-item-details">
+            <div>
+              <div class="cart-item-top"><span class="cart-item-name">${item.title}</span><span style="font-size: 12px;">${formatPrice(item.priceUSD * item.qty)}</span></div>
+              <div class="cart-item-size">Size: ${item.size}</div>
+            </div>
+            <div class="cart-item-bottom">
+              <div class="qty-stepper"><button onclick="updateQty(${idx}, -1)">&minus;</button><span>${item.qty}</span><button onclick="updateQty(${idx}, 1)">+</button></div>
+              <button class="close-btn" style="font-size: 10px;" onclick="updateQty(${idx}, -${item.qty})">Remove</button>
+            </div>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    function openQuickView(productId) {
+      const p = PRODUCTS.find((item) => item.id === productId);
+      if (!p) return;
+      activeQuickViewId = p.id;
+      selectedQuickViewSize = p.sizes[0];
+      document.getElementById("qvCategory").textContent = p.category;
+      document.getElementById("qvTitle").textContent = p.title;
+      document.getElementById("qvPrice").textContent = formatPrice(p.priceUSD);
+      document.getElementById("qvDesc").textContent = p.fabric;
+      document.getElementById("qvMedia").innerHTML = p.image ? `<img src="${p.image}" alt="${p.title}" />` : "Upload product image to preview";
+      document.getElementById("qvSizes").innerHTML = p.sizes.map((size) => `
+        <button class="qv-size-btn ${size === selectedQuickViewSize ? "selected" : ""}" onclick="selectQuickViewSize(this, '${size}')">${size}</button>
+      `).join("");
+      document.getElementById("qvAddBtn").onclick = () => {
+        addToCart(activeQuickViewId, selectedQuickViewSize);
+        document.getElementById("quickViewModal").classList.remove("open");
+      };
+      document.getElementById("backdrop").classList.add("open");
+      document.getElementById("quickViewModal").classList.add("open");
+    }
+
+    function selectQuickViewSize(btn, size) {
+      selectedQuickViewSize = size;
+      document.querySelectorAll(".qv-size-btn").forEach((el) => el.classList.remove("selected"));
+      btn.classList.add("selected");
+    }
+
+    function openCart() { closeAllOverlays(); document.getElementById("backdrop").classList.add("open"); document.getElementById("cartDrawer").classList.add("open"); }
+    function openSearch() { closeAllOverlays(); document.getElementById("backdrop").classList.add("open"); document.getElementById("searchOverlay").classList.add("open"); setTimeout(() => document.getElementById("searchInput").focus(), 100); handleSearch(""); }
+
+    function handleSearch(query) {
+      const q = query.trim().toLowerCase();
+      const matches = q ? PRODUCTS.filter((p) => p.title.toLowerCase().includes(q) || p.category.includes(q)) : PRODUCTS.slice(0, 4);
+      const container = document.getElementById("searchResults");
+      if (matches.length === 0) { container.innerHTML = `<div style="grid-column: 1 / -1; color: var(--ink-muted); font-size: 12px;">No pieces found matching "${query}".</div>`; return; }
+      container.innerHTML = matches.map((p) => `
+        <button class="search-result-item" onclick="closeAllOverlays(); openQuickView(${p.id})">
+          <div style="font-size: 11px; font-weight: 500; margin-bottom: 4px;">${p.title}</div>
+          <div style="font-size: 11px; color: var(--ink-muted);">${formatPrice(p.priceUSD)}</div>
+        </button>
+      `).join("");
+    }
+
+    function openMobileMenu() { closeAllOverlays(); document.getElementById("backdrop").classList.add("open"); document.getElementById("mobileDrawer").classList.add("open"); }
+
+    function closeAllOverlays() {
+      document.getElementById("backdrop").classList.remove("open");
+      document.getElementById("cartDrawer").classList.remove("open");
+      document.getElementById("searchOverlay").classList.remove("open");
+      document.getElementById("mobileDrawer").classList.remove("open");
+      document.getElementById("quickViewModal").classList.remove("open");
+    }
+
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeAllOverlays(); });
+
+    function handleNewsletter(e) {
+      e.preventDefault();
+      document.getElementById("newsletterFeedback").textContent = "Subscribed. You'll receive early access to the next release.";
+      document.getElementById("newsletterEmail").value = "";
+    }
+
+    let toastTimer = null;
+    function showToast(msg) {
+      const toast = document.getElementById("toast");
+      toast.textContent = msg;
+      toast.classList.add("show");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove("show"), 2200);
+    }
+
+    /* ========================================================================
+       INITIALIZE IMMEDIATELY + UPGRADE TO 50m NATURAL EARTH ASYNC
+       ======================================================================== */
+    document.addEventListener("DOMContentLoaded", () => {
+      initStaticUploadSlots();
+      renderProducts();
+      renderCart();
+
+      // Start 3D globe immediately (zero wait on black screen)
+      try {
+        if (typeof THREE !== "undefined") {
+          initThreeIntro();
+        }
+      } catch (err) {
+        console.warn("WebGL fallback active:", err);
+        introState.useThree = false;
+      }
+
+      lastFrameTime = performance.now();
+      introState.animId = requestAnimationFrame(animateIntro);
+
+      // Refresh ring text cleanly when Bebas Neue finishes loading
+      if (document.fonts && document.fonts.ready) {
+        document.fonts.ready.then(() => upgradeRingTextAfterFont()).catch(() => {});
+      }
+
+      // Stream 50m world country borders & NASA elevation textures and hot-swap seamlessly
+      Promise.all([
+        fetchWorldAtlas(),
+        loadCORSImage("https://cdn.jsdelivr.net/npm/three-globe/example/img/earth-topology.png", 4500),
+        loadCORSImage("https://cdn.jsdelivr.net/npm/three-globe/example/img/earth-water.png", 4500)
+      ]).then(([worldTopo, topoImg, waterImg]) => {
+        upgradeGlobeTexturesAsync(worldTopo, topoImg, waterImg);
+      }).catch(() => {});
+    });
+  </script>
+</body>
+</html>
